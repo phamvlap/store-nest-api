@@ -1,0 +1,9 @@
+model Brand {
+  id   String @id @default(uuid()) @db.VarChar(36)
+  name String @db.VarChar(255)
+  slug String @db.VarChar(255)
+
+  products Product[]
+
+  @@map("brands")
+}
