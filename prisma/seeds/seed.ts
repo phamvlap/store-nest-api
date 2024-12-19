@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import { Brand, Category, Prisma, PrismaClient } from '@prisma/client';
 import { generateRandomString } from '../../src/utils/generate-random-string';
+import { generateSlug } from '../../src/utils/generate-slug';
 import { isEmptyObject } from '../../src/utils/is-empty-object';
 
 const prisma = new PrismaClient();
@@ -12,13 +13,15 @@ const seed = async () => {
   const seedFiles = readdirSync(productDataPath);
   const categoriesName = seedFiles.map((fileName) => fileName.split('.')[0]);
 
-  const categoriesData = categoriesName.map((categoryName, index) => {
-    return {
-      name: categoryName.split('-').join(' '),
-      slug: categoryName.split(' ').join('-').toLowerCase(),
-      ordering: index,
-    };
-  });
+  const categoriesData: Array<Prisma.CategoryCreateInput> = categoriesName.map(
+    (categoryName, index) => {
+      return {
+        name: categoryName.split('-').join(' '),
+        slug: generateSlug(categoryName),
+        ordering: index,
+      };
+    },
+  );
 
   const categories: Array<Category> = await prisma.category.createManyAndReturn(
     {
@@ -28,7 +31,11 @@ const seed = async () => {
 
   const brandsData: Array<Prisma.BrandCreateInput> = [];
 
-  const cleanedProducts = [];
+  const cleanedProducts: Array<
+    Prisma.ProductCreateManyInput & {
+      brandSlug: string | null;
+    }
+  > = [];
   const urls: Array<string> = [];
   const skus: Array<string> = [];
   const productSlugs: Array<string> = [];
@@ -88,9 +95,10 @@ const seed = async () => {
       }
 
       if (isValid) {
-        const brandName = rawProduct.brand;
-        let brandSlug = null;
-        let productSlug = rawProduct.title.split(' ').join('-').toLowerCase();
+        const brandName = rawProduct.brand as string;
+        let brandSlug: string | null = null;
+        const originalProductSlug = generateSlug(rawProduct.title as string);
+        let productSlug = originalProductSlug;
 
         if (brandName && brandName !== '') {
           const brandIndex = brandsData.findIndex(
@@ -99,7 +107,7 @@ const seed = async () => {
           if (brandIndex !== -1) {
             brandSlug = brandsData[brandIndex].slug;
           } else {
-            brandSlug = brandName.split(' ').join('-').toLowerCase();
+            brandSlug = generateSlug(brandName);
             brandsData.push({
               name: brandName,
               slug: brandSlug,
@@ -107,8 +115,8 @@ const seed = async () => {
           }
         }
 
-        if (productSlugs.includes(productSlug)) {
-          productSlug = `${productSlug}-${generateRandomString(8)}`;
+        while (productSlugs.includes(productSlug)) {
+          productSlug = `${originalProductSlug}-${generateRandomString(8)}`;
         }
         productSlugs.push(productSlug);
 
@@ -147,7 +155,7 @@ const seed = async () => {
       if (brandSlug) {
         return {
           ...formattedData,
-          brandId: brandMapping[brandSlug as string],
+          brandId: brandMapping[brandSlug],
         };
       } else {
         return {
