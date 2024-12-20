@@ -7,5 +7,6 @@ import { BrandsService } from './brands.service';
 @Module({
   providers: [BrandsService, BrandsRepository, PrismaService],
   controllers: [BrandsController],
+  exports: [BrandsService],
 })
 export class BrandsModule {}
