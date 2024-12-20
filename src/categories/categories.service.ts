@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Category, Prisma } from '@prisma/client';
 import { CreateCategoryDto } from '../dtos/category/create.dto';
 import { UpdateCategoryDto } from '../dtos/category/update.dto';
@@ -11,14 +15,19 @@ export class CategoriesService {
   constructor(private readonly _categoriesRepository: CategoriesRepository) {}
 
   async getAll(): Promise<Array<Category>> {
-    const where: Prisma.CategoryWhereInput = {
-      deletedAt: {
-        equals: null,
-      },
-    };
-    return this._categoriesRepository.getAllCategories({
-      where,
-    });
+    try {
+      const where: Prisma.CategoryWhereInput = {
+        deletedAt: {
+          equals: null,
+        },
+      };
+      const categories = await this._categoriesRepository.getAllCategories({
+        where,
+      });
+      return categories;
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
   }
 
   async getById(id: string): Promise<Category | null> {
@@ -28,56 +37,75 @@ export class CategoriesService {
         equals: null,
       },
     };
-    return this._categoriesRepository.getOneCategory({
+    const category = await this._categoriesRepository.getOneCategory({
       where,
     });
+    if (!category) {
+      throw new NotFoundException('Resource not found');
+    }
+    return category;
   }
 
   async create(payload: CreateCategoryDto): Promise<Category> {
-    const categories = await this.getAll();
-    const existSlugs = new Set(categories.map((category) => category.slug));
+    try {
+      const categories = await this.getAll();
+      const existSlugs = new Set(categories.map((category) => category.slug));
 
-    const originalSlug = generateSlug(payload.name);
-    let slug = originalSlug;
-    while (existSlugs.has(slug)) {
-      slug = `${originalSlug}-${generateRandomString(8)}`;
+      const originalSlug = generateSlug(payload.name);
+      let slug = originalSlug;
+      while (existSlugs.has(slug)) {
+        slug = `${originalSlug}-${generateRandomString(8)}`;
+      }
+
+      const data: Prisma.CategoryCreateInput = {
+        ...payload,
+        slug,
+      };
+      const category = await this._categoriesRepository.createCategory({
+        data,
+      });
+      return category;
+    } catch (error) {
+      throw new InternalServerErrorException();
     }
-
-    const data: Prisma.CategoryCreateInput = {
-      ...payload,
-      slug,
-    };
-    return this._categoriesRepository.createCategory({
-      data,
-    });
   }
 
   async update(id: string, payload: UpdateCategoryDto): Promise<Category> {
-    const where: Prisma.CategoryWhereUniqueInput = {
-      id,
-      deletedAt: {
-        equals: null,
-      },
-    };
-    return this._categoriesRepository.updateCategory({
-      where,
-      data: payload,
-    });
+    try {
+      const where: Prisma.CategoryWhereUniqueInput = {
+        id,
+        deletedAt: {
+          equals: null,
+        },
+      };
+      const category = await this._categoriesRepository.updateCategory({
+        where,
+        data: payload,
+      });
+      return category;
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
   }
 
   async delete(id: string): Promise<Category> {
-    const where: Prisma.CategoryWhereUniqueInput = {
-      id,
-      deletedAt: {
-        equals: null,
-      },
-    };
-    const data = {
-      deletedAt: new Date(),
-    };
-    return this._categoriesRepository.updateCategory({
-      where,
-      data,
-    });
+    try {
+      const where: Prisma.CategoryWhereUniqueInput = {
+        id,
+        deletedAt: {
+          equals: null,
+        },
+      };
+      const data = {
+        deletedAt: new Date(),
+      };
+      const category = await this._categoriesRepository.updateCategory({
+        where,
+        data,
+      });
+      return category;
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
   }
 }
