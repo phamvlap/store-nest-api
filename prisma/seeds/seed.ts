@@ -1,6 +1,8 @@
 import { readFileSync, readdirSync } from 'fs';
 import { resolve } from 'path';
+import { BadRequestException } from '@nestjs/common';
 import { Brand, Category, Prisma, PrismaClient } from '@prisma/client';
+import { generateBeautiString } from '../../src/utils/generate-beauti-string';
 import { generateRandomString } from '../../src/utils/generate-random-string';
 import { generateSlug } from '../../src/utils/generate-slug';
 import { isEmptyObject } from '../../src/utils/is-empty-object';
@@ -9,15 +11,34 @@ const prisma = new PrismaClient();
 
 const seed = async () => {
   const productDataPath = resolve(__dirname, 'products-crawl');
+  const seedFileNames = readdirSync(productDataPath);
 
-  const seedFiles = readdirSync(productDataPath);
-  const categoriesName = seedFiles.map((fileName) => fileName.split('.')[0]);
+  if (seedFileNames.length === 0) {
+    throw new BadRequestException('No seed files found');
+  }
+  if (seedFileNames.some((fileName) => !fileName.endsWith('.json'))) {
+    throw new BadRequestException('Seed files must be JSON format');
+  }
+
+  const categoriesName = seedFileNames.map((fileName) =>
+    fileName.replace('.json', ''),
+  );
+
+  const existingCategorySlugs: Array<string> = [];
 
   const categoriesData: Array<Prisma.CategoryCreateInput> = categoriesName.map(
     (categoryName, index) => {
+      const originalSlug = generateSlug(categoryName);
+      let slug = originalSlug;
+
+      while (existingCategorySlugs.includes(slug)) {
+        slug = `${originalSlug}-${generateRandomString(8)}`;
+      }
+      existingCategorySlugs.push(slug);
+
       return {
-        name: categoryName.split('-').join(' '),
-        slug: generateSlug(categoryName),
+        name: generateBeautiString(categoryName, /[-_.]/gi),
+        slug,
         ordering: index,
       };
     },
@@ -30,7 +51,6 @@ const seed = async () => {
   );
 
   const brandsData: Array<Prisma.BrandCreateInput> = [];
-
   const cleanedProducts: Array<
     Prisma.ProductCreateManyInput & {
       brandSlug: string | null;
@@ -39,11 +59,10 @@ const seed = async () => {
   const urls: Array<string> = [];
   const skus: Array<string> = [];
   const productSlugs: Array<string> = [];
+  const brandSlugs: Array<string> = [];
 
   categories.forEach((category, index) => {
-    const data = readFileSync(
-      `${productDataPath}/${categoriesName[index]}.json`,
-    );
+    const data = readFileSync(`${productDataPath}/${seedFileNames[index]}`);
 
     const rawProductsPerCategory = JSON.parse(data.toString());
 
@@ -107,7 +126,14 @@ const seed = async () => {
           if (brandIndex !== -1) {
             brandSlug = brandsData[brandIndex].slug;
           } else {
-            brandSlug = generateSlug(brandName);
+            const originalSlug = generateSlug(brandName);
+            brandSlug = originalSlug;
+
+            while (brandSlugs.includes(brandSlug)) {
+              brandSlug = `${originalSlug}-${generateRandomString(8)}`;
+            }
+
+            brandSlugs.push(brandSlug);
             brandsData.push({
               name: brandName,
               slug: brandSlug,
