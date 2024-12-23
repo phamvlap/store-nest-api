@@ -14,6 +14,10 @@ export class BrandsRepository {
     return this._prisma.brand.findUnique(args);
   }
 
+  async getFirstBrand(args: Prisma.BrandFindFirstArgs): Promise<Brand | null> {
+    return this._prisma.brand.findFirst(args);
+  }
+
   async createBrand(args: Prisma.BrandCreateArgs): Promise<Brand> {
     return this._prisma.brand.create(args);
   }

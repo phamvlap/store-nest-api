@@ -18,6 +18,12 @@ export class CategoriesRepository {
     return this._prisma.category.findUnique(args);
   }
 
+  async getFirstCategory(
+    args: Prisma.CategoryFindFirstArgs,
+  ): Promise<Category | null> {
+    return this._prisma.category.findFirst(args);
+  }
+
   async createCategory(args: Prisma.CategoryCreateArgs): Promise<Category> {
     return this._prisma.category.create(args);
   }

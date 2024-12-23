@@ -23,6 +23,32 @@ export class CategoriesService {
     return categories;
   }
 
+  async _generateSlug(name: string): Promise<string> {
+    const originalSlug = generateSlug(name);
+    let slug = originalSlug;
+
+    while (true) {
+      const select: Prisma.CategorySelect = {
+        id: true,
+      };
+      const where: Prisma.CategoryWhereInput = {
+        slug,
+        deletedAt: {
+          equals: null,
+        },
+      };
+      const category = await this._categoriesRepository.getFirstCategory({
+        where,
+        select,
+      });
+      if (!category) {
+        break;
+      }
+      slug = `${originalSlug}-${generateRandomString(8)}`;
+    }
+    return slug;
+  }
+
   async getById(id: string): Promise<Category | null> {
     const where: Prisma.CategoryWhereUniqueInput = {
       id,
@@ -40,14 +66,7 @@ export class CategoriesService {
   }
 
   async create(payload: CreateCategoryDto): Promise<Category> {
-    const categories = await this.getAll();
-    const existSlugs = new Set(categories.map((category) => category.slug));
-
-    const originalSlug = generateSlug(payload.name);
-    let slug = originalSlug;
-    while (existSlugs.has(slug)) {
-      slug = `${originalSlug}-${generateRandomString(8)}`;
-    }
+    const slug = await this._generateSlug(payload.name);
 
     const data: Prisma.CategoryCreateInput = {
       ...payload,

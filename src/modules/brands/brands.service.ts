@@ -20,6 +20,33 @@ export class BrandsService {
     return this._brandsRepository.getAllBrands({ where });
   }
 
+  async _generateSlug(name: string): Promise<string> {
+    const originalSlug = generateSlug(name);
+    let slug = originalSlug;
+
+    while (true) {
+      const select: Prisma.BrandSelect = {
+        id: true,
+      };
+      const where: Prisma.BrandWhereInput = {
+        slug,
+        deletedAt: {
+          equals: null,
+        },
+      };
+      const brand = await this._brandsRepository.getFirstBrand({
+        where,
+        select,
+      });
+      if (!brand) {
+        break;
+      }
+      slug = `${originalSlug}-${generateRandomString(8)}`;
+    }
+
+    return slug;
+  }
+
   async getById(id: string): Promise<Brand | null> {
     const where: Prisma.BrandWhereUniqueInput = {
       id,
@@ -35,14 +62,7 @@ export class BrandsService {
   }
 
   async create(payload: CreateBrandDto): Promise<Brand> {
-    const originalSlug = generateSlug(payload.name);
-    const brands = await this.getAll();
-    const existSlugs = new Set(brands.map((brand) => brand.slug));
-
-    let slug = originalSlug;
-    while (existSlugs.has(slug)) {
-      slug = `${originalSlug}-${generateRandomString(8)}`;
-    }
+    const slug = await this._generateSlug(payload.name);
 
     const data = {
       ...payload,
