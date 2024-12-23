@@ -35,7 +35,7 @@ model Category {
 model Product {
   id                  String    @id @default(uuid()) @db.VarChar(36)
   title               String    @db.VarChar(255)
-  urlSource           String    @map("url_source") @db.VarChar(255)
+  urlSource           String    @default("") @map("url_source") @db.VarChar(255)
   description         String    @default("") @db.Text
   sku                 String    @db.VarChar(255)
   price               Float     @default(0) @db.DoublePrecision
