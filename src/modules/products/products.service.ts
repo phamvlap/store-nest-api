@@ -26,11 +26,56 @@ export class ProductsService {
     private readonly _brandsService: BrandsService,
   ) {}
 
+  async _isExistedSku(sku: string): Promise<boolean> {
+    const select: Prisma.ProductSelect = {
+      id: true,
+    };
+    const where: Prisma.ProductWhereInput = {
+      sku,
+      deletedAt: {
+        equals: null,
+      },
+    };
+    const product = await this._productsRepository.getFirstProduct({
+      where,
+      select,
+    });
+
+    return !!product;
+  }
+
+  async _generateSlug(title: string): Promise<string> {
+    const originalSlug = generateSlug(title);
+    let slug = originalSlug;
+
+    while (true) {
+      const select: Prisma.ProductSelect = {
+        id: true,
+      };
+      const where: Prisma.ProductWhereInput = {
+        slug,
+        deletedAt: {
+          equals: null,
+        },
+      };
+      const product = await this._productsRepository.getFirstProduct({
+        where,
+        select,
+      });
+
+      if (!product) {
+        break;
+      }
+      slug = `${originalSlug}-${generateRandomString(8)}`;
+    }
+
+    return slug;
+  }
+
   async getAll(): Promise<Array<Product>> {
     const select: Prisma.ProductSelect = {
       id: true,
       title: true,
-      urlSource: true,
       description: true,
       sku: true,
       price: true,
@@ -71,7 +116,6 @@ export class ProductsService {
     const select: Prisma.ProductSelect = {
       id: true,
       title: true,
-      urlSource: true,
       description: true,
       sku: true,
       price: true,
@@ -113,13 +157,8 @@ export class ProductsService {
   }
 
   async create(payload: CreateProductDto): Promise<Product> {
-    const products = await this.getAll();
-
-    const existingSlugs = products.map((product) => product.slug);
-    const existingUrls = new Set(products.map((product) => product.urlSource));
-    const existingSkus = new Set(products.map((product) => product.sku));
-
-    if (existingUrls.has(payload.urlSource) || existingSkus.has(payload.sku)) {
+    const isExistedSku = await this._isExistedSku(payload.sku);
+    if (isExistedSku) {
       throw new BadRequestException(PRODUCT_ALREADY_EXISTS);
     }
 
@@ -135,12 +174,7 @@ export class ProductsService {
       }
     }
 
-    const originalSlug = generateSlug(payload.title);
-    let slug = originalSlug;
-
-    while (existingSlugs.includes(slug)) {
-      slug = `${originalSlug}-${generateRandomString(8)}`;
-    }
+    const slug = await this._generateSlug(payload.title);
 
     const data = {
       ...payload,
@@ -159,16 +193,11 @@ export class ProductsService {
       throw new NotFoundException(PRODUCT_NOT_FOUND);
     }
 
-    const products = await this.getAll();
-
-    const existingUrls = new Set(products.map((product) => product.urlSource));
-    const existingSkus = new Set(products.map((product) => product.sku));
-
-    if (
-      (payload.urlSource && existingUrls.has(payload.urlSource)) ||
-      (payload.sku && existingSkus.has(payload.sku))
-    ) {
-      throw new BadRequestException(PRODUCT_ALREADY_EXISTS);
+    if (payload.sku) {
+      const isExistedSku = await this._isExistedSku(payload.sku);
+      if (isExistedSku) {
+        throw new BadRequestException(PRODUCT_ALREADY_EXISTS);
+      }
     }
 
     if (payload.categoryId) {

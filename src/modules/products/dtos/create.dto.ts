@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 export const createProductSchema = z.object({
   title: z.string().nonempty(),
-  urlSource: z.string().nonempty(),
   description: z.string().optional(),
   sku: z.string().nonempty(),
   price: z.number().positive(),

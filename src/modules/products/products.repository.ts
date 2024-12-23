@@ -18,6 +18,12 @@ export class ProductsRepository {
     return this._prisma.product.findUnique(args);
   }
 
+  async getFirstProduct(
+    args: Prisma.ProductFindFirstArgs,
+  ): Promise<Product | null> {
+    return this._prisma.product.findFirst(args);
+  }
+
   async createProduct(args: Prisma.ProductCreateArgs): Promise<Product> {
     return this._prisma.product.create(args);
   }

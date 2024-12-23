@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 export const updateProductSchema = z.object({
   title: z.string().nonempty().optional(),
-  urlSource: z.string().nonempty().optional(),
   description: z.string().optional().optional(),
   sku: z.string().nonempty().optional(),
   price: z.number().positive().optional(),
