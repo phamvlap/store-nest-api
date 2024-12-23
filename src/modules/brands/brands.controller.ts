@@ -8,10 +8,10 @@ import {
   Put,
 } from '@nestjs/common';
 import { Brand } from '@prisma/client';
-import { CreateBrandDto, createBrandSchema } from '../dtos/brand/create.dto';
-import { UpdateBrandDto, updateBrandSchema } from '../dtos/brand/update.dto';
-import { ZodValidationPipe } from '../pipes/zod-validation-pipe';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation-pipe';
 import { BrandsService } from './brands.service';
+import { CreateBrandDto, createBrandSchema } from './dtos/create.dto';
+import { UpdateBrandDto, updateBrandSchema } from './dtos/update.dto';
 
 @Controller('brands')
 export class BrandsController {

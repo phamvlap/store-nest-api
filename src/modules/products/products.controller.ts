@@ -8,15 +8,9 @@ import {
   Put,
 } from '@nestjs/common';
 import { Product } from '@prisma/client';
-import {
-  CreateProductDto,
-  createProductSchema,
-} from '../dtos/product/create.dto';
-import {
-  UpdateProductDto,
-  updateProductSchema,
-} from '../dtos/product/update.dto';
-import { ZodValidationPipe } from '../pipes/zod-validation-pipe';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation-pipe';
+import { CreateProductDto, createProductSchema } from './dtos/create.dto';
+import { UpdateProductDto, updateProductSchema } from './dtos/update.dto';
 import { ProductsService } from './products.service';
 
 @Controller('products')

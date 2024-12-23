@@ -5,12 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, Product } from '@prisma/client';
+import { generateRandomString } from '../../common/utils/generate-random-string';
+import { generateSlug } from '../../common/utils/generate-slug';
 import { BrandsService } from '../brands/brands.service';
 import { CategoriesService } from '../categories/categories.service';
-import { CreateProductDto } from '../dtos/product/create.dto';
-import { UpdateProductDto } from '../dtos/product/update.dto';
-import { generateRandomString } from '../utils/generate-random-string';
-import { generateSlug } from '../utils/generate-slug';
+import { CreateProductDto } from './dtos/create.dto';
+import { UpdateProductDto } from './dtos/update.dto';
 import { ProductsRepository } from './products.repository';
 
 @Injectable()

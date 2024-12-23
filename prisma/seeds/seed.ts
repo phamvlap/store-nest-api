@@ -2,10 +2,10 @@ import { readFileSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import { BadRequestException } from '@nestjs/common';
 import { Brand, Category, Prisma, PrismaClient } from '@prisma/client';
-import { generateBeautiString } from '../../src/utils/generate-beauti-string';
-import { generateRandomString } from '../../src/utils/generate-random-string';
-import { generateSlug } from '../../src/utils/generate-slug';
-import { isEmptyObject } from '../../src/utils/is-empty-object';
+import { generateBeautiString } from '../../src/common/utils/generate-beauti-string';
+import { generateRandomString } from '../../src/common/utils/generate-random-string';
+import { generateSlug } from '../../src/common/utils/generate-slug';
+import { isEmptyObject } from '../../src/common/utils/is-empty-object';
 
 const prisma = new PrismaClient();
 

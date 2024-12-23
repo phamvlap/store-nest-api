@@ -8,16 +8,10 @@ import {
   Put,
 } from '@nestjs/common';
 import { Category } from '@prisma/client';
-import {
-  CreateCategoryDto,
-  createCategorySchema,
-} from '../dtos/category/create.dto';
-import {
-  UpdateCategoryDto,
-  updateCategorySchema,
-} from '../dtos/category/update.dto';
-import { ZodValidationPipe } from '../pipes/zod-validation-pipe';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation-pipe';
 import { CategoriesService } from './categories.service';
+import { CreateCategoryDto, createCategorySchema } from './dtos/create.dto';
+import { UpdateCategoryDto, updateCategorySchema } from './dtos/update.dto';
 
 @Controller('categories')
 export class CategoriesController {

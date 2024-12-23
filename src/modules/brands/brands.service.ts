@@ -4,11 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Brand, Prisma } from '@prisma/client';
-import { CreateBrandDto } from '../dtos/brand/create.dto';
-import { UpdateBrandDto } from '../dtos/brand/update.dto';
-import { generateRandomString } from '../utils/generate-random-string';
-import { generateSlug } from '../utils/generate-slug';
+import { generateRandomString } from '../../common/utils/generate-random-string';
+import { generateSlug } from '../../common/utils/generate-slug';
 import { BrandsRepository } from './brands.repository';
+import { CreateBrandDto } from './dtos/create.dto';
+import { UpdateBrandDto } from './dtos/update.dto';
 
 @Injectable()
 export class BrandsService {

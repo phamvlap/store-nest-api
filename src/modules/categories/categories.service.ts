@@ -4,11 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Category, Prisma } from '@prisma/client';
-import { CreateCategoryDto } from '../dtos/category/create.dto';
-import { UpdateCategoryDto } from '../dtos/category/update.dto';
-import { generateRandomString } from '../utils/generate-random-string';
-import { generateSlug } from '../utils/generate-slug';
+import { generateRandomString } from '../../common/utils/generate-random-string';
+import { generateSlug } from '../../common/utils/generate-slug';
 import { CategoriesRepository } from './categories.repository';
+import { CreateCategoryDto } from './dtos/create.dto';
+import { UpdateCategoryDto } from './dtos/update.dto';
 
 @Injectable()
 export class CategoriesService {
