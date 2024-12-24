@@ -1,12 +1,12 @@
 import { readFileSync, readdirSync } from 'fs';
 import { resolve } from 'path';
+import { generateBeautiString } from '#common/utils/generate-beauti-string';
+import { generateRandomString } from '#common/utils/generate-random-string';
+import { generateSlug } from '#common/utils/generate-slug';
+import { isDirectory } from '#common/utils/is-directory';
+import { isEmptyObject } from '#common/utils/is-empty-object';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Brand, Category, Prisma, PrismaClient } from '@prisma/client';
-import { generateBeautiString } from '../../src/common/utils/generate-beauti-string';
-import { generateRandomString } from '../../src/common/utils/generate-random-string';
-import { generateSlug } from '../../src/common/utils/generate-slug';
-import { isDirectory } from '../../src/common/utils/is-directory';
-import { isEmptyObject } from '../../src/common/utils/is-empty-object';
 
 type CreateCategoryInput = {
   name: string;

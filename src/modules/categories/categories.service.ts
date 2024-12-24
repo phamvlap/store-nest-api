@@ -1,9 +1,9 @@
+import { GettingAllResponse } from '#common/types/getting-all-response.type';
+import { generateRandomString } from '#common/utils/generate-random-string';
+import { generateSlug } from '#common/utils/generate-slug';
+import { CATEGORY_NOT_FOUND } from '#contents/errors/category.error';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Category, Prisma } from '@prisma/client';
-import { GettingAllResponse } from '../../common/types/getting-all-response.type';
-import { generateRandomString } from '../../common/utils/generate-random-string';
-import { generateSlug } from '../../common/utils/generate-slug';
-import { CATEGORY_NOT_FOUND } from '../../contents/errors/category.error';
 import { CategoriesRepository } from './categories.repository';
 import { CreateCategoryDto } from './dtos/create.dto';
 import { FilterCategoryDto } from './dtos/filter.dto';

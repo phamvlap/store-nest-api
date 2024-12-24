@@ -1,3 +1,5 @@
+import { GettingAllResponse } from '#common/types/getting-all-response.type';
+import { Pagination } from '#common/types/pagination.type';
 import { Observable, map } from 'rxjs';
 import {
   CallHandler,
@@ -5,8 +7,6 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { GettingAllResponse } from '../types/getting-all-response.type';
-import { Pagination } from '../types/pagination.type';
 
 @Injectable()
 export class PaginationInterceptor<T>

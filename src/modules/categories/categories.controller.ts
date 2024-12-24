@@ -1,3 +1,5 @@
+import { ZodValidationPipe } from '#common/pipes/zod-validation-pipe';
+import { GettingAllResponse } from '#common/types/getting-all-response.type';
 import {
   Body,
   Controller,
@@ -9,8 +11,6 @@ import {
   Query,
 } from '@nestjs/common';
 import { Category } from '@prisma/client';
-import { ZodValidationPipe } from '../../common/pipes/zod-validation-pipe';
-import { GettingAllResponse } from '../../common/types/getting-all-response.type';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto, createCategorySchema } from './dtos/create.dto';
 import { FilterCategoryDto, filterCategorySchema } from './dtos/filter.dto';

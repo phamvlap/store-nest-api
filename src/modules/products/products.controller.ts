@@ -1,3 +1,6 @@
+import { PaginationInterceptor } from '#common/interceptors/pagination.interceptor';
+import { ZodValidationPipe } from '#common/pipes/zod-validation-pipe';
+import { GettingAllResponse } from '#common/types/getting-all-response.type';
 import {
   Body,
   Controller,
@@ -10,9 +13,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { Product } from '@prisma/client';
-import { PaginationInterceptor } from '../../common/interceptors/pagination.interceptor';
-import { ZodValidationPipe } from '../../common/pipes/zod-validation-pipe';
-import { GettingAllResponse } from '../../common/types/getting-all-response.type';
 import { CreateProductDto, createProductSchema } from './dtos/create.dto';
 import { FilterProductDto, filterProductSchema } from './dtos/filter.dto';
 import { UpdateProductDto, updateProductSchema } from './dtos/update.dto';

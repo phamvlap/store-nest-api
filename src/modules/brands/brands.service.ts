@@ -1,9 +1,9 @@
+import { GettingAllResponse } from '#common/types/getting-all-response.type';
+import { generateRandomString } from '#common/utils/generate-random-string';
+import { generateSlug } from '#common/utils/generate-slug';
+import { BRAND_NOT_FOUND } from '#contents/errors/brand.error';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Brand, Prisma } from '@prisma/client';
-import { GettingAllResponse } from '../../common/types/getting-all-response.type';
-import { generateRandomString } from '../../common/utils/generate-random-string';
-import { generateSlug } from '../../common/utils/generate-slug';
-import { BRAND_NOT_FOUND } from '../../contents/errors/brand.error';
 import { BrandsRepository } from './brands.repository';
 import { CreateBrandDto } from './dtos/create.dto';
 import { FilterBrandDto } from './dtos/filter.dto';

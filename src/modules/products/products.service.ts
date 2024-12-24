@@ -1,21 +1,21 @@
+import { GettingAllResponse } from '#common/types/getting-all-response.type';
+import { generateRandomString } from '#common/utils/generate-random-string';
+import { generateSlug } from '#common/utils/generate-slug';
+import { BRAND_NOT_FOUND } from '#contents/errors/brand.error';
+import { CATEGORY_NOT_FOUND } from '#contents/errors/category.error';
+import {
+  PRODUCT_ALREADY_EXISTS,
+  PRODUCT_BAD_QUERIES,
+  PRODUCT_NOT_FOUND,
+} from '#contents/errors/product.error';
+import { BrandsService } from '#modules/brands/brands.service';
+import { CategoriesService } from '#modules/categories/categories.service';
 import {
   BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, Product } from '@prisma/client';
-import { GettingAllResponse } from '../../common/types/getting-all-response.type';
-import { generateRandomString } from '../../common/utils/generate-random-string';
-import { generateSlug } from '../../common/utils/generate-slug';
-import { BRAND_NOT_FOUND } from '../../contents/errors/brand.error';
-import { CATEGORY_NOT_FOUND } from '../../contents/errors/category.error';
-import {
-  PRODUCT_ALREADY_EXISTS,
-  PRODUCT_BAD_QUERIES,
-  PRODUCT_NOT_FOUND,
-} from '../../contents/errors/product.error';
-import { BrandsService } from '../brands/brands.service';
-import { CategoriesService } from '../categories/categories.service';
 import { CreateProductDto } from './dtos/create.dto';
 import { FilterProductDto } from './dtos/filter.dto';
 import { UpdateProductDto } from './dtos/update.dto';

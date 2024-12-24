@@ -1,6 +1,6 @@
+import { BrandsModule } from '#modules/brands/brands.module';
+import { CategoriesModule } from '#modules/categories/categories.module';
 import { Module } from '@nestjs/common';
-import { BrandsModule } from '../brands/brands.module';
-import { CategoriesModule } from '../categories/categories.module';
 import { ProductsController } from './products.controller';
 import { ProductsRepository } from './products.repository';
 import { ProductsService } from './products.service';
