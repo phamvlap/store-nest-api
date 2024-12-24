@@ -1,6 +1,5 @@
 import { GettingAllResponse } from '#common/types/getting-all-response.type';
-import { generateRandomString } from '#common/utils/generate-random-string';
-import { generateSlug } from '#common/utils/generate-slug';
+import { generateRandomString, generateSlug } from '#common/utils';
 import { BRAND_NOT_FOUND } from '#contents/errors/brand.error';
 import { CATEGORY_NOT_FOUND } from '#contents/errors/category.error';
 import {
