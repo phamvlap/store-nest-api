@@ -10,6 +10,10 @@ export class BrandsRepository {
     return this._prisma.brand.findMany(args);
   }
 
+  async getBrandsCount(args: Prisma.BrandCountArgs): Promise<number> {
+    return this._prisma.brand.count(args);
+  }
+
   async getOneBrand(args: Prisma.BrandFindUniqueArgs): Promise<Brand | null> {
     return this._prisma.brand.findUnique(args);
   }

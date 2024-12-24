@@ -7,9 +7,12 @@ import {
   Post,
   Put,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { Brand } from '@prisma/client';
+import { PaginationInterceptor } from '../../common/interceptors/pagination.interceptor';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation-pipe';
+import { GettingAllResponse } from '../../common/types/getting-all-response.type';
 import { BrandsService } from './brands.service';
 import { CreateBrandDto, createBrandSchema } from './dtos/create.dto';
 import { FilterBrandDto, filterBrandSchema } from './dtos/filter.dto';
@@ -20,9 +23,10 @@ export class BrandsController {
   constructor(private readonly _brandsService: BrandsService) {}
 
   @Get()
+  @UseInterceptors(PaginationInterceptor)
   async getAll(
     @Query(new ZodValidationPipe(filterBrandSchema)) queries: FilterBrandDto,
-  ): Promise<Array<Brand>> {
+  ): Promise<GettingAllResponse<Brand>> {
     return this._brandsService.getAll(queries);
   }
 

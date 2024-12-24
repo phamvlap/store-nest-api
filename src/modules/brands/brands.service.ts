@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Brand, Prisma } from '@prisma/client';
+import { GettingAllResponse } from '../../common/types/getting-all-response.type';
 import { generateRandomString } from '../../common/utils/generate-random-string';
 import { generateSlug } from '../../common/utils/generate-slug';
 import { BRAND_NOT_FOUND } from '../../contents/errors/brand.error';
@@ -12,7 +13,7 @@ import { UpdateBrandDto } from './dtos/update.dto';
 export class BrandsService {
   constructor(private readonly _brandsRepository: BrandsRepository) {}
 
-  async getAll(queries: FilterBrandDto): Promise<Array<Brand>> {
+  async getAll(queries: FilterBrandDto): Promise<GettingAllResponse<Brand>> {
     const where: Prisma.BrandWhereInput = {
       deletedAt: {
         equals: null,
@@ -27,12 +28,23 @@ export class BrandsService {
         },
       ];
     }
+
     const orderBy = queries.sort
       ? queries.sort.map((field) => ({
           [field.field]: field.value,
         }))
       : [];
-    return this._brandsRepository.getAllBrands({ where, orderBy });
+
+    const count = await this._brandsRepository.getBrandsCount({ where });
+    const categories = await this._brandsRepository.getAllBrands({
+      where,
+      orderBy,
+    });
+
+    return {
+      count,
+      data: categories,
+    };
   }
 
   async _generateSlug(name: string): Promise<string> {
