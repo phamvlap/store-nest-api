@@ -6,10 +6,15 @@ import {
   Param,
   Post,
   Put,
+  Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { Product } from '@prisma/client';
+import { PaginationInterceptor } from '../../common/interceptors/pagination.interceptor';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation-pipe';
+import { GettingAllResponse } from '../../common/types/getting-all-response.type';
 import { CreateProductDto, createProductSchema } from './dtos/create.dto';
+import { FilterProductDto, filterProductSchema } from './dtos/filter.dto';
 import { UpdateProductDto, updateProductSchema } from './dtos/update.dto';
 import { ProductsService } from './products.service';
 
@@ -18,8 +23,11 @@ export class ProductsController {
   constructor(private readonly _productsService: ProductsService) {}
 
   @Get()
-  async getAll(): Promise<Array<Product>> {
-    return this._productsService.getAll();
+  @UseInterceptors(PaginationInterceptor)
+  async getAll(
+    @Query(new ZodValidationPipe(filterProductSchema)) filter: FilterProductDto,
+  ): Promise<GettingAllResponse<Product>> {
+    return this._productsService.getAll(filter);
   }
 
   @Get(':id')

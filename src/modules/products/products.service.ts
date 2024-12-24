@@ -4,17 +4,20 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, Product } from '@prisma/client';
+import { GettingAllResponse } from '../../common/types/getting-all-response.type';
 import { generateRandomString } from '../../common/utils/generate-random-string';
 import { generateSlug } from '../../common/utils/generate-slug';
 import { BRAND_NOT_FOUND } from '../../contents/errors/brand.error';
 import { CATEGORY_NOT_FOUND } from '../../contents/errors/category.error';
 import {
   PRODUCT_ALREADY_EXISTS,
+  PRODUCT_BAD_QUERIES,
   PRODUCT_NOT_FOUND,
 } from '../../contents/errors/product.error';
 import { BrandsService } from '../brands/brands.service';
 import { CategoriesService } from '../categories/categories.service';
 import { CreateProductDto } from './dtos/create.dto';
+import { FilterProductDto } from './dtos/filter.dto';
 import { UpdateProductDto } from './dtos/update.dto';
 import { ProductsRepository } from './products.repository';
 
@@ -72,7 +75,9 @@ export class ProductsService {
     return slug;
   }
 
-  async getAll(): Promise<Array<Product>> {
+  async getAll(filter: FilterProductDto): Promise<GettingAllResponse<Product>> {
+    const flatSearchKeys = ['title', 'sku'];
+
     const select: Prisma.ProductSelect = {
       id: true,
       title: true,
@@ -100,16 +105,105 @@ export class ProductsService {
         },
       },
     };
+
+    const orderBy = filter.sort
+      ? filter.sort.map((field) => ({
+          [field.field]: field.value,
+        }))
+      : [];
+
     const where: Prisma.ProductWhereInput = {
       deletedAt: {
         equals: null,
       },
     };
-    const products = await this._productsRepository.getAllProducts({
-      select,
-      where,
-    });
-    return products;
+
+    if (filter.search) {
+      where.OR = [
+        ...flatSearchKeys.map((field) => ({
+          [field]: {
+            contains: filter.search,
+            mode: 'insensitive',
+          },
+        })),
+        ...[
+          {
+            category: {
+              name: {
+                contains: filter.search,
+              },
+            },
+          },
+          {
+            brand: {
+              name: {
+                contains: filter.search,
+              },
+            },
+          },
+        ],
+      ];
+    }
+    if (filter.filter && filter.filter.length > 0) {
+      where.AND = filter.filter
+        .filter((field) => !['category', 'brand'].includes(field.field))
+        .map((field) => ({
+          [field.field]: field.value,
+        }));
+
+      const categoryFilter = filter.filter.find(
+        (field) => field.field === 'category',
+      );
+      const brandFilter = filter.filter.find(
+        (field) => field.field === 'brand',
+      );
+
+      if (categoryFilter) {
+        where.category = {
+          name: {
+            equals: categoryFilter.value,
+          },
+        };
+      }
+      if (brandFilter) {
+        where.brand = {
+          name: {
+            equals: brandFilter.value,
+          },
+        };
+      }
+    }
+
+    let products: Array<Product>;
+
+    const count = await this._productsRepository.getProductsCount({ where });
+
+    if (!filter.noPagination) {
+      const { page, limit } = filter;
+      if (!page || !limit) {
+        throw new BadRequestException(PRODUCT_BAD_QUERIES);
+      }
+
+      const skip = (page - 1) * limit;
+
+      products = await this._productsRepository.getAllProducts({
+        select,
+        where,
+        orderBy,
+        skip,
+        take: limit,
+      });
+    } else {
+      products = await this._productsRepository.getAllProducts({
+        select,
+        where,
+        orderBy,
+      });
+    }
+    return {
+      count,
+      data: products,
+    };
   }
 
   async getById(id: string): Promise<Product | null> {

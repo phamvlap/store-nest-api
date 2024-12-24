@@ -12,6 +12,10 @@ export class ProductsRepository {
     return this._prisma.product.findMany(args);
   }
 
+  async getProductsCount(args: Prisma.ProductCountArgs): Promise<number> {
+    return this._prisma.product.count(args);
+  }
+
   async getOneProduct(
     args: Prisma.ProductFindUniqueArgs,
   ): Promise<Product | null> {
