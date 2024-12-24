@@ -1,26 +1,54 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Category, Prisma } from '@prisma/client';
+import { GettingAllResponse } from '../../common/types/getting-all-response.type';
 import { generateRandomString } from '../../common/utils/generate-random-string';
 import { generateSlug } from '../../common/utils/generate-slug';
 import { CATEGORY_NOT_FOUND } from '../../contents/errors/category.error';
 import { CategoriesRepository } from './categories.repository';
 import { CreateCategoryDto } from './dtos/create.dto';
+import { FilterCategoryDto } from './dtos/filter.dto';
 import { UpdateCategoryDto } from './dtos/update.dto';
 
 @Injectable()
 export class CategoriesService {
   constructor(private readonly _categoriesRepository: CategoriesRepository) {}
 
-  async getAll(): Promise<Array<Category>> {
+  async getAll(
+    queries: FilterCategoryDto,
+  ): Promise<GettingAllResponse<Category>> {
+    const orderBy = queries.sort
+      ? queries.sort.map((field) => ({
+          [field.field]: field.value,
+        }))
+      : [];
+
     const where: Prisma.CategoryWhereInput = {
       deletedAt: {
         equals: null,
       },
     };
-    const categories = await this._categoriesRepository.getAllCategories({
+    if (queries.search) {
+      where.OR = [
+        {
+          name: {
+            contains: queries.search,
+          },
+        },
+      ];
+    }
+
+    const count = await this._categoriesRepository.getCategoriesCount({
       where,
     });
-    return categories;
+
+    const categories = await this._categoriesRepository.getAllCategories({
+      where,
+      orderBy,
+    });
+    return {
+      count,
+      data: categories,
+    };
   }
 
   async _generateSlug(name: string): Promise<string> {

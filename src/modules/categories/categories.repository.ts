@@ -12,6 +12,10 @@ export class CategoriesRepository {
     return this._prisma.category.findMany(args);
   }
 
+  async getCategoriesCount(args: Prisma.CategoryCountArgs): Promise<number> {
+    return this._prisma.category.count(args);
+  }
+
   async getOneCategory(
     args: Prisma.CategoryFindUniqueArgs,
   ): Promise<Category | null> {
