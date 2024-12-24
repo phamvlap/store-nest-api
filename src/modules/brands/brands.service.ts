@@ -5,19 +5,34 @@ import { generateSlug } from '../../common/utils/generate-slug';
 import { BRAND_NOT_FOUND } from '../../contents/errors/brand.error';
 import { BrandsRepository } from './brands.repository';
 import { CreateBrandDto } from './dtos/create.dto';
+import { FilterBrandDto } from './dtos/filter.dto';
 import { UpdateBrandDto } from './dtos/update.dto';
 
 @Injectable()
 export class BrandsService {
   constructor(private readonly _brandsRepository: BrandsRepository) {}
 
-  async getAll(): Promise<Array<Brand>> {
+  async getAll(queries: FilterBrandDto): Promise<Array<Brand>> {
     const where: Prisma.BrandWhereInput = {
       deletedAt: {
         equals: null,
       },
     };
-    return this._brandsRepository.getAllBrands({ where });
+    if (queries.search) {
+      where.OR = [
+        {
+          name: {
+            contains: queries.search,
+          },
+        },
+      ];
+    }
+    const orderBy = queries.sort
+      ? queries.sort.map((field) => ({
+          [field.field]: field.value,
+        }))
+      : [];
+    return this._brandsRepository.getAllBrands({ where, orderBy });
   }
 
   async _generateSlug(name: string): Promise<string> {

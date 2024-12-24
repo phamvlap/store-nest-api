@@ -6,11 +6,13 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { Brand } from '@prisma/client';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation-pipe';
 import { BrandsService } from './brands.service';
 import { CreateBrandDto, createBrandSchema } from './dtos/create.dto';
+import { FilterBrandDto, filterBrandSchema } from './dtos/filter.dto';
 import { UpdateBrandDto, updateBrandSchema } from './dtos/update.dto';
 
 @Controller('brands')
@@ -18,8 +20,10 @@ export class BrandsController {
   constructor(private readonly _brandsService: BrandsService) {}
 
   @Get()
-  async getAll(): Promise<Array<Brand>> {
-    return this._brandsService.getAll();
+  async getAll(
+    @Query(new ZodValidationPipe(filterBrandSchema)) queries: FilterBrandDto,
+  ): Promise<Array<Brand>> {
+    return this._brandsService.getAll(queries);
   }
 
   @Get(':id')
