@@ -1,0 +1,10 @@
+model Account {
+  id               String    @id @default(uuid()) @db.VarChar(36)
+  email            String    @db.VarChar(100)
+  password         String    @db.Text
+  accessToken      String?   @map("access_token") @db.VarChar(255)
+  resetCode        String?   @map("reset_code") @db.VarChar(255)
+  resetCodeExpires DateTime? @map("reset_code_expires") @db.Timestamp
+
+  @@map("accounts")
+}

@@ -9,6 +9,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Account {
+  id               String    @id @default(uuid()) @db.VarChar(36)
+  email            String    @db.VarChar(100)
+  password         String    @db.Text
+  accessToken      String?   @map("access_token") @db.VarChar(255)
+  resetCode        String?   @map("reset_code") @db.VarChar(255)
+  resetCodeExpires DateTime? @map("reset_code_expires") @db.Timestamp
+
+  @@map("accounts")
+}
+
 model Brand {
   id        String    @id @default(uuid()) @db.VarChar(36)
   name      String    @db.VarChar(255)
@@ -54,4 +65,13 @@ model Product {
   brand    Brand?   @relation(fields: [brandId], references: [id])
 
   @@map("products")
+}
+
+model Staff {
+  id          String @id @default(uuid()) @db.VarChar(36)
+  name        String @db.VarChar(100)
+  email       String @db.VarChar(100)
+  phoneNumber String @map("phone_number") @db.VarChar(17)
+
+  @@map("staffs")
 }
