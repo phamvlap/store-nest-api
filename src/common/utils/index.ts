@@ -1,4 +1,5 @@
 import { generateBeautiString } from './generate-beauti-string';
+import { generateHashSHA256 } from './generate-hash-sha256';
 import { generateRandomString } from './generate-random-string';
 import { generateSlug } from './generate-slug';
 import { isDirectory } from './is-directory';
@@ -10,4 +11,5 @@ export {
   generateSlug,
   isDirectory,
   isEmptyObject,
+  generateHashSHA256,
 };
