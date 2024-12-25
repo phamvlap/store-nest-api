@@ -16,7 +16,7 @@ export class ProductsRepository {
     return this._prisma.product.count(args);
   }
 
-  async getOneProduct(
+  async getUniqueProduct(
     args: Prisma.ProductFindUniqueArgs,
   ): Promise<Product | null> {
     return this._prisma.product.findUnique(args);

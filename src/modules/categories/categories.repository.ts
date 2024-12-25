@@ -16,7 +16,7 @@ export class CategoriesRepository {
     return this._prisma.category.count(args);
   }
 
-  async getOneCategory(
+  async getUniqueCategory(
     args: Prisma.CategoryFindUniqueArgs,
   ): Promise<Category | null> {
     return this._prisma.category.findUnique(args);

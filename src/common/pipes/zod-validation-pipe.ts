@@ -1,3 +1,4 @@
+import { VALIDATION_ERROR } from '#contents/errors/validation.error';
 import { ZodSchema } from 'zod';
 import {
   ArgumentMetadata,
@@ -15,10 +16,7 @@ export class ZodValidationPipe implements PipeTransform {
       return parsedValue;
     } catch (error) {
       console.log({ error });
-      throw new BadRequestException({
-        message: 'Validation failed',
-        statusCode: 400,
-      });
+      throw new BadRequestException(VALIDATION_ERROR);
     }
   }
 }

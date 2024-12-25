@@ -131,12 +131,18 @@ export class ProductsService {
               name: {
                 contains: filter.search,
               },
+              deletedAt: {
+                equals: null,
+              },
             },
           },
           {
             brand: {
               name: {
                 contains: filter.search,
+              },
+              deletedAt: {
+                equals: null,
               },
             },
           },
@@ -162,12 +168,18 @@ export class ProductsService {
           name: {
             equals: categoryFilter.value,
           },
+          deletedAt: {
+            equals: null,
+          },
         };
       }
       if (brandFilter) {
         where.brand = {
           name: {
             equals: brandFilter.value,
+          },
+          deletedAt: {
+            equals: null,
           },
         };
       }
@@ -179,6 +191,7 @@ export class ProductsService {
 
     if (!filter.noPagination) {
       const { page, limit } = filter;
+
       if (!page || !limit) {
         throw new BadRequestException(PRODUCT_BAD_QUERIES);
       }
@@ -239,7 +252,7 @@ export class ProductsService {
         equals: null,
       },
     };
-    const product = await this._productsRepository.getOneProduct({
+    const product = await this._productsRepository.getUniqueProduct({
       select,
       where,
     });
@@ -320,7 +333,7 @@ export class ProductsService {
       ...payload,
     };
 
-    return await this._productsRepository.updateProduct({
+    return this._productsRepository.updateProduct({
       where,
       data,
     });
@@ -341,7 +354,7 @@ export class ProductsService {
     const data: Prisma.ProductUpdateInput = {
       deletedAt: new Date(),
     };
-    return await this._productsRepository.updateProduct({
+    return this._productsRepository.updateProduct({
       where,
       data,
     });

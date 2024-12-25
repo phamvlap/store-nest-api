@@ -22,7 +22,7 @@ export class PaginationInterceptor<T>
 
         const filter = context.switchToHttp().getRequest().query;
 
-        const pagination = !!(
+        const enablePagination = !!(
           filter.noPagination && filter.noPagination === 'false'
         );
         const page = Number.parseInt(filter.page as string);
@@ -31,7 +31,7 @@ export class PaginationInterceptor<T>
         let previous: number | null = null;
         let next: number | null = null;
 
-        if (pagination && page && limit) {
+        if (enablePagination && page && limit) {
           previous = page > 1 ? page - 1 : null;
           next = page * limit < count ? page + 1 : null;
         }

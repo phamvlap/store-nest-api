@@ -80,7 +80,7 @@ export class BrandsService {
         equals: null,
       },
     };
-    const brand = await this._brandsRepository.getOneBrand({ where });
+    const brand = await this._brandsRepository.getUniqueBrand({ where });
     if (!brand) {
       throw new NotFoundException(BRAND_NOT_FOUND);
     }
@@ -106,7 +106,7 @@ export class BrandsService {
       },
     };
 
-    const brand = await this._brandsRepository.getOneBrand({ where });
+    const brand = await this._brandsRepository.getUniqueBrand({ where });
     if (!brand) {
       throw new NotFoundException(BRAND_NOT_FOUND);
     }
@@ -125,7 +125,7 @@ export class BrandsService {
       },
     };
 
-    const brand = await this._brandsRepository.getOneBrand({ where });
+    const brand = await this._brandsRepository.getUniqueBrand({ where });
     if (!brand) {
       throw new NotFoundException(BRAND_NOT_FOUND);
     }

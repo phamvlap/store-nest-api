@@ -83,7 +83,7 @@ export class CategoriesService {
         equals: null,
       },
     };
-    const category = await this._categoriesRepository.getOneCategory({
+    const category = await this._categoriesRepository.getUniqueCategory({
       where,
     });
     if (!category) {
@@ -113,14 +113,14 @@ export class CategoriesService {
       },
     };
 
-    const category = await this._categoriesRepository.getOneCategory({
+    const category = await this._categoriesRepository.getUniqueCategory({
       where,
     });
     if (!category) {
       throw new NotFoundException(CATEGORY_NOT_FOUND);
     }
 
-    return await this._categoriesRepository.updateCategory({
+    return this._categoriesRepository.updateCategory({
       where,
       data: payload,
     });
@@ -134,7 +134,7 @@ export class CategoriesService {
       },
     };
 
-    const category = await this._categoriesRepository.getOneCategory({
+    const category = await this._categoriesRepository.getUniqueCategory({
       where,
     });
     if (!category) {
