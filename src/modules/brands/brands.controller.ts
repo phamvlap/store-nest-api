@@ -31,7 +31,7 @@ export class BrandsController {
   }
 
   @Get(':id')
-  async getById(@Param('id') id: string): Promise<Brand | null> {
+  async getById(@Param('id') id: string): Promise<Brand> {
     return this._brandsService.getById(id);
   }
 
@@ -51,7 +51,7 @@ export class BrandsController {
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string): Promise<Brand> {
+  async delete(@Param('id') id: string): Promise<void> {
     return this._brandsService.delete(id);
   }
 }

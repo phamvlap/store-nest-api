@@ -1,7 +1,14 @@
 import { GettingAllResponse } from '#common/types/getting-all-response.type';
 import { generateRandomString, generateSlug } from '#common/utils';
-import { BRAND_NOT_FOUND } from '#contents/errors/brand.error';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BRAND_ALREADY_EXIST,
+  BRAND_NOT_FOUND,
+} from '#contents/errors/brand.error';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Brand, Prisma } from '@prisma/client';
 import { BrandsRepository } from './brands.repository';
 import { CreateBrandDto } from './dtos/create.dto';
@@ -17,16 +24,17 @@ export class BrandsService {
       deletedAt: {
         equals: null,
       },
+      OR: queries.search
+        ? [
+            {
+              name: {
+                contains: queries.search,
+                mode: 'insensitive',
+              },
+            },
+          ]
+        : undefined,
     };
-    if (queries.search) {
-      where.OR = [
-        {
-          name: {
-            contains: queries.search,
-          },
-        },
-      ];
-    }
 
     const orderBy = queries.sort
       ? queries.sort.map((field) => ({
@@ -46,41 +54,15 @@ export class BrandsService {
     };
   }
 
-  async _generateSlug(name: string): Promise<string> {
-    const originalSlug = generateSlug(name);
-    let slug = originalSlug;
-
-    while (true) {
-      const select: Prisma.BrandSelect = {
-        id: true,
-      };
-      const where: Prisma.BrandWhereInput = {
-        slug,
+  async getById(id: string): Promise<Brand> {
+    const brand = await this._brandsRepository.getUniqueBrand({
+      where: {
+        id,
         deletedAt: {
           equals: null,
         },
-      };
-      const brand = await this._brandsRepository.getFirstBrand({
-        where,
-        select,
-      });
-      if (!brand) {
-        break;
-      }
-      slug = `${originalSlug}-${generateRandomString(8)}`;
-    }
-
-    return slug;
-  }
-
-  async getById(id: string): Promise<Brand | null> {
-    const where: Prisma.BrandWhereUniqueInput = {
-      id,
-      deletedAt: {
-        equals: null,
       },
-    };
-    const brand = await this._brandsRepository.getUniqueBrand({ where });
+    });
     if (!brand) {
       throw new NotFoundException(BRAND_NOT_FOUND);
     }
@@ -88,6 +70,21 @@ export class BrandsService {
   }
 
   async create(payload: CreateBrandDto): Promise<Brand> {
+    const existingBrand = await this._brandsRepository.getFirstBrand({
+      where: {
+        name: {
+          equals: payload.name,
+        },
+        deletedAt: {
+          equals: null,
+        },
+      },
+    });
+
+    if (existingBrand) {
+      throw new BadRequestException(BRAND_ALREADY_EXIST);
+    }
+
     const slug = await this._generateSlug(payload.name);
 
     const data = {
@@ -95,6 +92,7 @@ export class BrandsService {
       slug,
     };
     const brand = await this._brandsRepository.createBrand({ data });
+
     return brand;
   }
 
@@ -117,7 +115,7 @@ export class BrandsService {
     });
   }
 
-  async delete(id: string): Promise<Brand> {
+  async delete(id: string): Promise<void> {
     const where: Prisma.BrandWhereUniqueInput = {
       id,
       deletedAt: {
@@ -133,9 +131,35 @@ export class BrandsService {
     const data: Prisma.BrandUpdateInput = {
       deletedAt: new Date(),
     };
-    return this._brandsRepository.updateBrand({
+
+    await this._brandsRepository.updateBrand({
       where,
       data,
     });
+  }
+
+  private async _generateSlug(name: string): Promise<string> {
+    const originalSlug = generateSlug(name);
+    let slug = originalSlug;
+
+    while (true) {
+      const brand = await this._brandsRepository.getFirstBrand({
+        select: {
+          id: true,
+        },
+        where: {
+          slug,
+          deletedAt: {
+            equals: null,
+          },
+        },
+      });
+      if (!brand) {
+        break;
+      }
+      slug = `${originalSlug}-${generateRandomString(8)}`;
+    }
+
+    return slug;
   }
 }
