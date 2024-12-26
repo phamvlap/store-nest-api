@@ -4,8 +4,8 @@ import { BRAND_NOT_FOUND } from '#contents/errors/brand.error';
 import { CATEGORY_NOT_FOUND } from '#contents/errors/category.error';
 import {
   PRODUCT_ALREADY_EXISTS,
-  PRODUCT_BAD_QUERIES,
   PRODUCT_NOT_FOUND,
+  PRODUCT_SKU_ALREADY_EXISTS,
 } from '#contents/errors/product.error';
 import { BrandsService } from '#modules/brands/brands.service';
 import { CategoriesService } from '#modules/categories/categories.service';
@@ -27,52 +27,6 @@ export class ProductsService {
     private readonly _categoriesService: CategoriesService,
     private readonly _brandsService: BrandsService,
   ) {}
-
-  async _isExistedSku(sku: string): Promise<boolean> {
-    const select: Prisma.ProductSelect = {
-      id: true,
-    };
-    const where: Prisma.ProductWhereInput = {
-      sku,
-      deletedAt: {
-        equals: null,
-      },
-    };
-    const product = await this._productsRepository.getFirstProduct({
-      where,
-      select,
-    });
-
-    return !!product;
-  }
-
-  async _generateSlug(title: string): Promise<string> {
-    const originalSlug = generateSlug(title);
-    let slug = originalSlug;
-
-    while (true) {
-      const select: Prisma.ProductSelect = {
-        id: true,
-      };
-      const where: Prisma.ProductWhereInput = {
-        slug,
-        deletedAt: {
-          equals: null,
-        },
-      };
-      const product = await this._productsRepository.getFirstProduct({
-        where,
-        select,
-      });
-
-      if (!product) {
-        break;
-      }
-      slug = `${originalSlug}-${generateRandomString(8)}`;
-    }
-
-    return slug;
-  }
 
   async getAll(filter: FilterProductDto): Promise<GettingAllResponse<Product>> {
     const flatSearchKeys = ['title', 'sku'];
@@ -115,40 +69,40 @@ export class ProductsService {
       deletedAt: {
         equals: null,
       },
+      OR: filter.search
+        ? [
+            ...flatSearchKeys.map((field) => ({
+              [field]: {
+                contains: filter.search,
+                mode: 'insensitive',
+              },
+            })),
+            {
+              category: {
+                name: {
+                  contains: filter.search,
+                  mode: 'insensitive',
+                },
+                deletedAt: {
+                  equals: null,
+                },
+              },
+            },
+            {
+              brand: {
+                name: {
+                  contains: filter.search,
+                  mode: 'insensitive',
+                },
+                deletedAt: {
+                  equals: null,
+                },
+              },
+            },
+          ]
+        : undefined,
     };
 
-    if (filter.search) {
-      where.OR = [
-        ...flatSearchKeys.map((field) => ({
-          [field]: {
-            contains: filter.search,
-            mode: 'insensitive',
-          },
-        })),
-        ...[
-          {
-            category: {
-              name: {
-                contains: filter.search,
-              },
-              deletedAt: {
-                equals: null,
-              },
-            },
-          },
-          {
-            brand: {
-              name: {
-                contains: filter.search,
-              },
-              deletedAt: {
-                equals: null,
-              },
-            },
-          },
-        ],
-      ];
-    }
     if (filter.filter && filter.filter.length > 0) {
       where.AND = filter.filter
         .filter((field) => !['category', 'brand'].includes(field.field))
@@ -185,76 +139,70 @@ export class ProductsService {
       }
     }
 
-    let products: Array<Product>;
-
     const count = await this._productsRepository.getProductsCount({ where });
 
+    let { page, limit } = filter;
+    let skip = 0;
+
     if (!filter.noPagination) {
-      const { page, limit } = filter;
-
-      if (!page || !limit) {
-        throw new BadRequestException(PRODUCT_BAD_QUERIES);
-      }
-
-      const skip = (page - 1) * limit;
-
-      products = await this._productsRepository.getAllProducts({
-        select,
-        where,
-        orderBy,
-        skip,
-        take: limit,
-      });
-    } else {
-      products = await this._productsRepository.getAllProducts({
-        select,
-        where,
-        orderBy,
-      });
+      page = page as number;
+      limit = limit as number;
+      skip = (page - 1) * limit;
     }
+
+    const products = await this._productsRepository.getAllProducts({
+      select,
+      where,
+      orderBy,
+      ...(!filter.noPagination
+        ? {
+            skip,
+            take: limit,
+          }
+        : {}),
+    });
+
     return {
       count,
       data: products,
     };
   }
 
-  async getById(id: string): Promise<Product | null> {
-    const select: Prisma.ProductSelect = {
-      id: true,
-      title: true,
-      description: true,
-      sku: true,
-      price: true,
-      features: true,
-      specifications: true,
-      images: true,
-      warranty: true,
-      deliveryInformation: true,
-      slug: true,
-      category: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-        },
-      },
-      brand: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-        },
-      },
-    };
-    const where: Prisma.ProductWhereUniqueInput = {
-      id,
-      deletedAt: {
-        equals: null,
-      },
-    };
+  async getById(id: string): Promise<Product> {
     const product = await this._productsRepository.getUniqueProduct({
-      select,
-      where,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        sku: true,
+        price: true,
+        features: true,
+        specifications: true,
+        images: true,
+        warranty: true,
+        deliveryInformation: true,
+        slug: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        brand: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+      where: {
+        id,
+        deletedAt: {
+          equals: null,
+        },
+      },
     });
     if (!product) {
       throw new NotFoundException(PRODUCT_NOT_FOUND);
@@ -263,8 +211,19 @@ export class ProductsService {
   }
 
   async create(payload: CreateProductDto): Promise<Product> {
-    const isExistedSku = await this._isExistedSku(payload.sku);
-    if (isExistedSku) {
+    const existingProduct = await this._productsRepository.getFirstProduct({
+      select: {
+        id: true,
+      },
+      where: {
+        sku: payload.sku,
+        deletedAt: {
+          equals: null,
+        },
+      },
+    });
+
+    if (existingProduct) {
       throw new BadRequestException(PRODUCT_ALREADY_EXISTS);
     }
 
@@ -300,9 +259,23 @@ export class ProductsService {
     }
 
     if (payload.sku) {
-      const isExistedSku = await this._isExistedSku(payload.sku);
-      if (isExistedSku) {
-        throw new BadRequestException(PRODUCT_ALREADY_EXISTS);
+      const existingProduct = await this._productsRepository.getFirstProduct({
+        select: {
+          id: true,
+        },
+        where: {
+          sku: payload.sku,
+          deletedAt: {
+            equals: null,
+          },
+          id: {
+            not: id,
+          },
+        },
+      });
+
+      if (existingProduct) {
+        throw new BadRequestException(PRODUCT_SKU_ALREADY_EXISTS);
       }
     }
 
@@ -339,8 +312,9 @@ export class ProductsService {
     });
   }
 
-  async delete(id: string): Promise<Product> {
+  async delete(id: string): Promise<void> {
     const product = await this.getById(id);
+
     if (!product) {
       throw new NotFoundException(PRODUCT_NOT_FOUND);
     }
@@ -354,9 +328,36 @@ export class ProductsService {
     const data: Prisma.ProductUpdateInput = {
       deletedAt: new Date(),
     };
-    return this._productsRepository.updateProduct({
+
+    await this._productsRepository.updateProduct({
       where,
       data,
     });
+  }
+
+  private async _generateSlug(title: string): Promise<string> {
+    const originalSlug = generateSlug(title);
+    let slug = originalSlug;
+
+    while (true) {
+      const product = await this._productsRepository.getFirstProduct({
+        where: {
+          slug,
+          deletedAt: {
+            equals: null,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!product) {
+        break;
+      }
+      slug = `${originalSlug}-${generateRandomString(8)}`;
+    }
+
+    return slug;
   }
 }

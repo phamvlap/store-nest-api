@@ -10,8 +10,8 @@ export const createProductSchema = z.object({
   images: z.array(z.string()).nonempty(),
   warranty: z.string().optional(),
   deliveryInformation: z.string().optional(),
-  categoryId: z.string().nonempty(),
-  brandId: z.string().optional(),
+  categoryId: z.string().nonempty().uuid(),
+  brandId: z.string().nonempty().uuid().optional(),
 });
 
 export type CreateProductDto = z.infer<typeof createProductSchema>;

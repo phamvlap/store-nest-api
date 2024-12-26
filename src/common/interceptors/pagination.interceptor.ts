@@ -1,5 +1,7 @@
+import { PaginationConsts } from '#common/constants';
 import { GettingAllResponse } from '#common/types/getting-all-response.type';
 import { Pagination } from '#common/types/pagination.type';
+import { Request } from 'express';
 import { Observable, map } from 'rxjs';
 import {
   CallHandler,
@@ -16,25 +18,32 @@ export class PaginationInterceptor<T>
     context: ExecutionContext,
     next: CallHandler<T>,
   ): Observable<Pagination<T>> | Promise<Observable<Pagination<T>>> {
+    const request = context.switchToHttp().getRequest<Request>();
+    const reqQueries = request.query;
+
+    const enablePagination = !!(
+      reqQueries.noPagination && reqQueries.noPagination === 'false'
+    );
+    let page = parseInt(reqQueries.page as string);
+    let limit = parseInt(reqQueries.limit as string);
+
+    if (enablePagination) {
+      page = page || PaginationConsts.DEFAULT_PAGE;
+      limit = limit || PaginationConsts.DEFAULT_LIMIT;
+    }
+
+    request.query = {
+      ...reqQueries,
+      page: page.toString(),
+      limit: limit.toString(),
+    };
+
     return next.handle().pipe(
       map((data) => {
         const { count, data: items } = data as GettingAllResponse<T>;
 
-        const filter = context.switchToHttp().getRequest().query;
-
-        const enablePagination = !!(
-          filter.noPagination && filter.noPagination === 'false'
-        );
-        const page = Number.parseInt(filter.page as string);
-        const limit = Number.parseInt(filter.limit as string);
-
-        let previous: number | null = null;
-        let next: number | null = null;
-
-        if (enablePagination && page && limit) {
-          previous = page > 1 ? page - 1 : null;
-          next = page * limit < count ? page + 1 : null;
-        }
+        const previous = enablePagination && page > 1 ? page - 1 : null;
+        const next = enablePagination && page * limit < count ? page + 1 : null;
 
         return {
           previous,

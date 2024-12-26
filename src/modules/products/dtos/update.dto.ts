@@ -10,8 +10,8 @@ export const updateProductSchema = z.object({
   images: z.array(z.string()).nonempty().optional(),
   warranty: z.string().optional().optional(),
   deliveryInformation: z.string().optional().optional(),
-  categoryId: z.string().nonempty().optional(),
-  brandId: z.string().optional(),
+  categoryId: z.string().nonempty().uuid().optional(),
+  brandId: z.string().nonempty().uuid().optional(),
 });
 
 export type UpdateProductDto = z.infer<typeof updateProductSchema>;
