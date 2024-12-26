@@ -29,7 +29,7 @@ export class CategoriesController {
   }
 
   @Get(':id')
-  async getById(@Param('id') id: string): Promise<Category | null> {
+  async getById(@Param('id') id: string): Promise<Category> {
     return this._categoriesService.getById(id);
   }
 
@@ -49,7 +49,7 @@ export class CategoriesController {
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string): Promise<Category> {
+  async delete(@Param('id') id: string): Promise<void> {
     return this._categoriesService.delete(id);
   }
 }

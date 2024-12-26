@@ -1,7 +1,14 @@
 import { GettingAllResponse } from '#common/types/getting-all-response.type';
 import { generateRandomString, generateSlug } from '#common/utils';
-import { CATEGORY_NOT_FOUND } from '#contents/errors/category.error';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  CATEGORY_ALREADY_EXISTS,
+  CATEGORY_NOT_FOUND,
+} from '#contents/errors/category.error';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Category, Prisma } from '@prisma/client';
 import { CategoriesRepository } from './categories.repository';
 import { CreateCategoryDto } from './dtos/create.dto';
@@ -25,16 +32,17 @@ export class CategoriesService {
       deletedAt: {
         equals: null,
       },
+      OR: queries.search
+        ? [
+            {
+              name: {
+                contains: queries.search,
+                mode: 'insensitive',
+              },
+            },
+          ]
+        : undefined,
     };
-    if (queries.search) {
-      where.OR = [
-        {
-          name: {
-            contains: queries.search,
-          },
-        },
-      ];
-    }
 
     const count = await this._categoriesRepository.getCategoriesCount({
       where,
@@ -50,41 +58,14 @@ export class CategoriesService {
     };
   }
 
-  async _generateSlug(name: string): Promise<string> {
-    const originalSlug = generateSlug(name);
-    let slug = originalSlug;
-
-    while (true) {
-      const select: Prisma.CategorySelect = {
-        id: true,
-      };
-      const where: Prisma.CategoryWhereInput = {
-        slug,
+  async getById(id: string): Promise<Category> {
+    const category = await this._categoriesRepository.getUniqueCategory({
+      where: {
+        id,
         deletedAt: {
           equals: null,
         },
-      };
-      const category = await this._categoriesRepository.getFirstCategory({
-        where,
-        select,
-      });
-      if (!category) {
-        break;
-      }
-      slug = `${originalSlug}-${generateRandomString(8)}`;
-    }
-    return slug;
-  }
-
-  async getById(id: string): Promise<Category | null> {
-    const where: Prisma.CategoryWhereUniqueInput = {
-      id,
-      deletedAt: {
-        equals: null,
       },
-    };
-    const category = await this._categoriesRepository.getUniqueCategory({
-      where,
     });
     if (!category) {
       throw new NotFoundException(CATEGORY_NOT_FOUND);
@@ -93,6 +74,21 @@ export class CategoriesService {
   }
 
   async create(payload: CreateCategoryDto): Promise<Category> {
+    const existingCategory = await this._categoriesRepository.getFirstCategory({
+      where: {
+        name: {
+          equals: payload.name,
+        },
+        deletedAt: {
+          equals: null,
+        },
+      },
+    });
+
+    if (existingCategory) {
+      throw new BadRequestException(CATEGORY_ALREADY_EXISTS);
+    }
+
     const slug = await this._generateSlug(payload.name);
 
     const data: Prisma.CategoryCreateInput = {
@@ -126,7 +122,7 @@ export class CategoriesService {
     });
   }
 
-  async delete(id: string): Promise<Category> {
+  async delete(id: string): Promise<void> {
     const where: Prisma.CategoryWhereUniqueInput = {
       id,
       deletedAt: {
@@ -137,6 +133,7 @@ export class CategoriesService {
     const category = await this._categoriesRepository.getUniqueCategory({
       where,
     });
+
     if (!category) {
       throw new NotFoundException(CATEGORY_NOT_FOUND);
     }
@@ -144,9 +141,34 @@ export class CategoriesService {
     const data = {
       deletedAt: new Date(),
     };
-    return this._categoriesRepository.updateCategory({
+
+    await this._categoriesRepository.updateCategory({
       where,
       data,
     });
+  }
+
+  private async _generateSlug(name: string): Promise<string> {
+    const originalSlug = generateSlug(name);
+    let slug = originalSlug;
+
+    while (true) {
+      const category = await this._categoriesRepository.getFirstCategory({
+        select: {
+          id: true,
+        },
+        where: {
+          slug,
+          deletedAt: {
+            equals: null,
+          },
+        },
+      });
+      if (!category) {
+        break;
+      }
+      slug = `${originalSlug}-${generateRandomString(8)}`;
+    }
+    return slug;
   }
 }
