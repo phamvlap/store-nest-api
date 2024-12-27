@@ -1,3 +1,4 @@
+import { AuthGetStarted } from '#common/types/auth-get-started.type';
 import { generateHash } from '#common/utils';
 import { USER_ALREDADY_EXISTS } from '#contents/errors/user.error';
 import { UsersRepository } from '#modules/users/users.repository';
@@ -8,6 +9,18 @@ import { RegisterUserDto } from './dtos/register.dto';
 @Injectable()
 export class AuthService {
   constructor(private readonly _usersRepository: UsersRepository) {}
+
+  async checkingExistedUser(email: string): Promise<AuthGetStarted> {
+    const user = await this._usersRepository.getFirstUser({
+      where: {
+        email,
+      },
+    });
+
+    return {
+      existed: !!user,
+    };
+  }
 
   async register(payload: RegisterUserDto): Promise<User> {
     const existingUser = await this._usersRepository.getFirstUser({
