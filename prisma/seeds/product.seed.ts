@@ -1,12 +1,6 @@
-import { readFileSync, readdirSync } from 'fs';
+import { existsSync, lstatSync, readFileSync, readdirSync } from 'fs';
 import { resolve } from 'path';
-import {
-  generateBeautiString,
-  generateRandomString,
-  generateSlug,
-  isDirectory,
-  isEmptyObject,
-} from '#common/utils';
+import slugify from 'slugify';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Brand, Category, Prisma, PrismaClient } from '@prisma/client';
 
@@ -45,159 +39,16 @@ const FILE_NOT_JSON_FORMAT = {
 
 export class ProductSeed {
   private _prismaClient: PrismaClient;
-  private _separatorLength = 80;
+  private readonly _separatorLength = 80;
+  private readonly _dirName = 'data/products_crawl';
 
   constructor() {
     this._prismaClient = new PrismaClient();
   }
 
-  _readFilesFromDir(dirName: string): Array<string> {
-    const dirPath = resolve(__dirname, dirName);
-    if (!isDirectory(dirPath)) {
-      throw new NotFoundException(DIR_NOT_FOUND);
-    }
-    const fileNames = readdirSync(dirPath);
-
-    return fileNames;
-  }
-
-  _generateUniqueSlug(name: string, existingSlugs: Array<string>): string {
-    const originalSlug = generateSlug(name);
-    let slug = originalSlug;
-
-    while (existingSlugs.includes(slug)) {
-      slug = `${originalSlug}-${generateRandomString(8)}`;
-    }
-
-    return slug;
-  }
-
-  _readFileContent(filePath: string): Array<RawProductData> {
-    const data = readFileSync(filePath);
-
-    const parsedData = JSON.parse(data.toString());
-
-    return parsedData;
-  }
-
-  async _createCategories(
-    categoryInputs: Array<CreateCategoryInput>,
-  ): Promise<Array<Category>> {
-    const existingCategorySlugs: Array<string> = [];
-
-    const categoriesData: Array<Prisma.CategoryCreateInput> =
-      categoryInputs.map((categoryInput, index) => {
-        const slug = this._generateUniqueSlug(
-          categoryInput.name,
-          existingCategorySlugs,
-        );
-        existingCategorySlugs.push(slug);
-
-        return {
-          name: generateBeautiString(categoryInput.name, /[-_.]/gi),
-          slug,
-          ordering: index,
-        };
-      });
-
-    const categories: Array<Category> = [];
-
-    for (let i = 0; i < categoriesData.length; i++) {
-      const categoryData = categoriesData[i];
-      const categoryDb = await this._prismaClient.category.findFirst({
-        where: {
-          name: categoriesData[i].name,
-        },
-      });
-      if (categoryDb) {
-        categories.push(categoryDb);
-        console.log(
-          `[${i + 1}/${categoriesData.length}] Existed - Skipping category: ${categoryData.name}`,
-        );
-        continue;
-      }
-      console.log(
-        `[${i + 1}/${categoriesData.length}] Creating category: ${categoryData.name}`,
-      );
-      const category = await this._prismaClient.category.create({
-        data: categoryData,
-      });
-      categories.push(category);
-    }
-
-    this._printSeparatedLine(this._separatorLength);
-
-    return categories;
-  }
-
-  async _createBrands(
-    brandsData: Array<Prisma.BrandCreateInput>,
-  ): Promise<Array<Brand>> {
-    const brands: Array<Brand> = [];
-
-    for (let i = 0; i < brandsData.length; i++) {
-      const brandData = brandsData[i];
-      const brandDb = await this._prismaClient.brand.findFirst({
-        where: {
-          name: brandData.name,
-        },
-      });
-      if (brandDb) {
-        brands.push(brandDb);
-        console.log(
-          `[${i + 1}/${brandsData.length}] Existed - Skipping brand: ${brandData.name}`,
-        );
-        continue;
-      }
-      console.log(
-        `[${i + 1}/${brandsData.length}] Creating brand: ${brandData.name}`,
-      );
-      const brand = await this._prismaClient.brand.create({
-        data: brandData,
-      });
-      brands.push(brand);
-    }
-
-    this._printSeparatedLine(this._separatorLength);
-
-    return brands;
-  }
-
-  async _createProducts(
-    productsData: Array<Prisma.ProductCreateInput>,
-  ): Promise<void> {
-    for (let i = 0; i < productsData.length; i++) {
-      const productData = productsData[i];
-      const productDb = await this._prismaClient.product.findFirst({
-        where: {
-          title: productData.title,
-        },
-      });
-      if (productDb) {
-        console.log(
-          `[${i + 1}/${productsData.length}] Existed - Skipping product: ${productData.title}`,
-        );
-        continue;
-      }
-      console.log(
-        `[${i + 1}/${productsData.length}] Creating product: ${productData.title}`,
-      );
-      await this._prismaClient.product.create({
-        data: productData,
-      });
-    }
-
-    this._printSeparatedLine(this._separatorLength);
-  }
-
-  _printSeparatedLine(numChars: number): void {
-    console.log('='.repeat(numChars), '\n');
-  }
-
   async main() {
-    const dirName = 'data';
-    const dirPath = resolve(__dirname, dirName);
-    const seedFileNames = this._readFilesFromDir(dirName);
+    const dirPath = resolve(__dirname, this._dirName);
+    const seedFileNames = this._readFilesFromDir(this._dirName);
 
     if (seedFileNames.length === 0) {
       throw new NotFoundException(FILE_NOT_FOUND);
@@ -239,7 +90,7 @@ export class ProductSeed {
       for (const rawProduct of rawProductsPerCategory) {
         let isValid = true;
 
-        if (isEmptyObject(rawProduct)) {
+        if (this._isEmptyObject(rawProduct)) {
           isValid = false;
         }
 
@@ -366,7 +217,211 @@ export class ProductSeed {
     }
   }
 
-  test() {
-    console.log(__dirname);
+  private _readFilesFromDir(dirName: string): Array<string> {
+    const dirPath = resolve(__dirname, dirName);
+    if (!this._isDirectory(dirPath)) {
+      throw new NotFoundException(DIR_NOT_FOUND);
+    }
+    const fileNames = readdirSync(dirPath);
+
+    return fileNames;
+  }
+
+  private _generateUniqueSlug(
+    name: string,
+    existingSlugs: Array<string>,
+  ): string {
+    const originalSlug = this._generateSlug(name);
+    let slug = originalSlug;
+
+    while (existingSlugs.includes(slug)) {
+      slug = `${originalSlug}-${this._generateRandomString(8)}`;
+    }
+
+    return slug;
+  }
+
+  private _readFileContent(filePath: string): Array<RawProductData> {
+    const data = readFileSync(filePath);
+
+    const parsedData = JSON.parse(data.toString());
+
+    return parsedData;
+  }
+
+  private async _createCategories(
+    categoryInputs: Array<CreateCategoryInput>,
+  ): Promise<Array<Category>> {
+    const existingCategorySlugs: Array<string> = [];
+
+    const categoriesData: Array<Prisma.CategoryCreateInput> =
+      categoryInputs.map((categoryInput, index) => {
+        const slug = this._generateUniqueSlug(
+          categoryInput.name,
+          existingCategorySlugs,
+        );
+        existingCategorySlugs.push(slug);
+
+        return {
+          name: this._generateBeautiString(categoryInput.name, /[-_.]/gi),
+          slug,
+          ordering: index,
+        };
+      });
+
+    const categories: Array<Category> = [];
+
+    for (let i = 0; i < categoriesData.length; i++) {
+      const categoryData = categoriesData[i];
+      const categoryDb = await this._prismaClient.category.findFirst({
+        where: {
+          name: categoriesData[i].name,
+        },
+      });
+      if (categoryDb) {
+        categories.push(categoryDb);
+        console.log(
+          `[${i + 1}/${categoriesData.length}] Existed - Skipping category: ${categoryData.name}`,
+        );
+        continue;
+      }
+      console.log(
+        `[${i + 1}/${categoriesData.length}] Creating category: ${categoryData.name}`,
+      );
+      const category = await this._prismaClient.category.create({
+        data: categoryData,
+      });
+      categories.push(category);
+    }
+
+    this._printSeparatedLine(this._separatorLength);
+
+    return categories;
+  }
+
+  private async _createBrands(
+    brandsData: Array<Prisma.BrandCreateInput>,
+  ): Promise<Array<Brand>> {
+    const brands: Array<Brand> = [];
+
+    for (let i = 0; i < brandsData.length; i++) {
+      const brandData = brandsData[i];
+      const brandDb = await this._prismaClient.brand.findFirst({
+        where: {
+          name: brandData.name,
+        },
+      });
+      if (brandDb) {
+        brands.push(brandDb);
+        console.log(
+          `[${i + 1}/${brandsData.length}] Existed - Skipping brand: ${brandData.name}`,
+        );
+        continue;
+      }
+      console.log(
+        `[${i + 1}/${brandsData.length}] Creating brand: ${brandData.name}`,
+      );
+      const brand = await this._prismaClient.brand.create({
+        data: brandData,
+      });
+      brands.push(brand);
+    }
+
+    this._printSeparatedLine(this._separatorLength);
+
+    return brands;
+  }
+
+  private async _createProducts(
+    productsData: Array<Prisma.ProductCreateInput>,
+  ): Promise<void> {
+    for (let i = 0; i < productsData.length; i++) {
+      const productData = productsData[i];
+      const productDb = await this._prismaClient.product.findFirst({
+        where: {
+          title: productData.title,
+        },
+      });
+      if (productDb) {
+        console.log(
+          `[${i + 1}/${productsData.length}] Existed - Skipping product: ${productData.title}`,
+        );
+        continue;
+      }
+      console.log(
+        `[${i + 1}/${productsData.length}] Creating product: ${productData.title}`,
+      );
+      await this._prismaClient.product.create({
+        data: productData,
+      });
+    }
+
+    this._printSeparatedLine(this._separatorLength);
+  }
+
+  private _printSeparatedLine(numChars: number): void {
+    console.log('='.repeat(numChars), '\n');
+  }
+
+  private _capitializeString(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  }
+
+  private _generateBeautiString(
+    str: string,
+    separator: string | RegExp = /[-]/gi,
+  ): string {
+    const words = str.split(separator).filter((word) => word.length > 0);
+    const beautiString = words
+      .map((word) => this._capitializeString(word))
+      .join(' ');
+
+    return beautiString;
+  }
+
+  private _isEmptyObject(value: object): boolean {
+    for (const key in value) {
+      if (Object.hasOwnProperty.call(value, key)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private _generateSlug(text: string, options: object = {}): string {
+    const slugOptions = this._isEmptyObject(options)
+      ? {
+          replacement: '-',
+          lower: true,
+          trim: true,
+        }
+      : options;
+    return slugify(text, slugOptions);
+  }
+
+  private _isDirectory(path: string): boolean {
+    if (!existsSync(path)) {
+      return false;
+    }
+    return lstatSync(path) ? lstatSync(path).isDirectory() : false;
+  }
+
+  private _generateRandomString(length: number): string {
+    let characters = '';
+    for (let i = 'a'.charCodeAt(0); i <= 'z'.charCodeAt(0); ++i) {
+      characters += String.fromCharCode(i);
+    }
+    for (let i = 'A'.charCodeAt(0); i <= 'Z'.charCodeAt(0); ++i) {
+      characters += String.fromCharCode(i);
+    }
+    for (let i = '0'.charCodeAt(0); i <= '9'.charCodeAt(0); ++i) {
+      characters += String.fromCharCode(i);
+    }
+    const charactersLength = characters.length;
+    let result = '';
+    for (let i = 0; i < length; ++i) {
+      result += characters[Math.floor(Math.random() * charactersLength)];
+    }
+    return result;
   }
 }
