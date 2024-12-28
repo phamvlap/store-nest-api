@@ -4,6 +4,7 @@ import { generateRandomString } from './generate-random-string';
 import { generateSlug } from './generate-slug';
 import { isDirectory } from './is-directory';
 import { isEmptyObject } from './is-empty-object';
+import { isMatchingHash } from './is-matching-hash';
 
 export {
   generateBeautiString,
@@ -12,4 +13,5 @@ export {
   isDirectory,
   isEmptyObject,
   generateHash,
+  isMatchingHash,
 };

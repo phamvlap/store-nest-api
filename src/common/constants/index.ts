@@ -6,3 +6,13 @@ export const PaginationConsts = {
 export const BcryptConsts = {
   SALT_ROUNDS: 10,
 };
+
+export const StrategyConsts = {
+  LOCAL_USER: 'local-user',
+  JWT_USER: 'jwt-user',
+};
+
+export const JwtConsts = {
+  ACCESS_TOKEN_EXPIRES_IN: '1h',
+  REFRESH_TOKEN_EXPIRES_IN: '90d',
+};
