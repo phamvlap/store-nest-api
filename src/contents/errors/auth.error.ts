@@ -3,4 +3,9 @@ const AUTH_LOGIN_FAILED = {
   message: 'Email or password is incorrect',
 };
 
-export { AUTH_LOGIN_FAILED };
+const AUTH_UNAUTHORIZED = {
+  code: 'auth_unauthorized',
+  message: 'Unauthorized',
+};
+
+export { AUTH_LOGIN_FAILED, AUTH_UNAUTHORIZED };

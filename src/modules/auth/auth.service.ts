@@ -4,7 +4,10 @@ import { LoginResponse } from '#common/types/login-response.type';
 import { SignatureData } from '#common/types/signature-data.type';
 import { UserProfile } from '#common/types/user-profile.type';
 import { generateHash, isMatchingHash } from '#common/utils';
-import { AUTH_LOGIN_FAILED } from '#contents/errors/auth.error';
+import {
+  AUTH_LOGIN_FAILED,
+  AUTH_UNAUTHORIZED,
+} from '#contents/errors/auth.error';
 import { USER_ALREDADY_EXISTS } from '#contents/errors/user.error';
 import { UsersRepository } from '#modules/users/users.repository';
 import { BadRequestException, Injectable } from '@nestjs/common';
@@ -110,5 +113,26 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  async validateUserProfile(id: string): Promise<UserProfile> {
+    const user = await this._usersRepository.getFirstUser({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException(AUTH_UNAUTHORIZED);
+    }
+
+    return user as UserProfile;
   }
 }
