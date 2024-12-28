@@ -15,18 +15,32 @@ import {
 } from '#contents/errors/auth.error';
 import { USER_ALREDADY_EXISTS } from '#contents/errors/user.error';
 import { UsersRepository } from '#modules/users/users.repository';
+import { sign } from 'jsonwebtoken';
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
 import { RegisterUserDto } from './dtos/register.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 
+type TokenArgs = {
+  secretKey: string;
+  expiresIn: string;
+};
+
 @Injectable()
 export class AuthService {
-  constructor(
-    private readonly _usersRepository: UsersRepository,
-    private readonly _jwtService: JwtService,
-  ) {}
+  private _accessTokenArgs: TokenArgs;
+  private _refreshTokenArgs: TokenArgs;
+
+  constructor(private readonly _usersRepository: UsersRepository) {
+    this._accessTokenArgs = {
+      secretKey: process.env.JWT_ACCESS_TOKEN_SECRET_KEY as string,
+      expiresIn: JwtConsts.ACCESS_TOKEN_EXPIRES_IN,
+    };
+    this._refreshTokenArgs = {
+      secretKey: process.env.JWT_REFRESH_TOKEN_SECRET_KEY as string,
+      expiresIn: JwtConsts.REFRESH_TOKEN_EXPIRES_IN,
+    };
+  }
 
   async checkingExistedUser(email: string): Promise<AuthGetStarted> {
     const user = await this._usersRepository.getFirstUser({
@@ -108,11 +122,11 @@ export class AuthService {
       email: user.email,
     };
 
-    const accessToken = this._jwtService.sign(data, {
-      expiresIn: JwtConsts.ACCESS_TOKEN_EXPIRES_IN,
+    const accessToken = sign(data, this._accessTokenArgs.secretKey, {
+      expiresIn: this._accessTokenArgs.expiresIn,
     });
-    const refreshToken = this._jwtService.sign(data, {
-      expiresIn: JwtConsts.REFRESH_TOKEN_EXPIRES_IN,
+    const refreshToken = sign(data, this._refreshTokenArgs.secretKey, {
+      expiresIn: this._refreshTokenArgs.expiresIn,
     });
 
     return {
