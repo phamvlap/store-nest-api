@@ -8,6 +8,7 @@ import { User } from '@prisma/client';
 import { AuthService } from './auth.service';
 import { GetStartedDto, getStartedSchema } from './dtos/get-started.dto';
 import { RegisterUserDto, registerUserSchema } from './dtos/register.dto';
+import { ResetCodeDto, resetCodeSchema } from './dtos/reset-code.dto';
 import { LocalUserGuard } from './guards/local-user.guard';
 
 @Controller('auth')
@@ -33,5 +34,12 @@ export class AuthController {
   @Post('login')
   login(@RequestUser() user: UserProfile): LoginResponse {
     return this._authService.login(user);
+  }
+
+  @Post('send-reset-code')
+  async sendCode(
+    @Body(new ZodValidationPipe(resetCodeSchema)) body: ResetCodeDto,
+  ): Promise<void> {
+    return this._authService.sendSecretCode(body.email);
   }
 }

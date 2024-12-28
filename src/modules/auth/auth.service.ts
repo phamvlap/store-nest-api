@@ -3,7 +3,11 @@ import { AuthGetStarted } from '#common/types/auth-get-started.type';
 import { LoginResponse } from '#common/types/login-response.type';
 import { SignatureData } from '#common/types/signature-data.type';
 import { UserProfile } from '#common/types/user-profile.type';
-import { generateHash, isMatchingHash } from '#common/utils';
+import {
+  generateHash,
+  generateRandomString,
+  isMatchingHash,
+} from '#common/utils';
 import {
   AUTH_LOGIN_FAILED,
   AUTH_UNAUTHORIZED,
@@ -134,5 +138,45 @@ export class AuthService {
     }
 
     return user as UserProfile;
+  }
+
+  async sendSecretCode(email: string): Promise<void> {
+    const user = await this._usersRepository.getFirstUser({
+      where: {
+        email,
+      },
+    });
+
+    if (!user) {
+      return;
+    }
+
+    let needToGenNewCode = true;
+    let secretCode = generateRandomString(6, true, false);
+
+    if (user.resetCode && user.resetCodeExpiresAt) {
+      const now = new Date();
+      const expiredAt = new Date(user.resetCodeExpiresAt);
+
+      if (now.getTime() < expiredAt.getTime()) {
+        secretCode = user.resetCode;
+        needToGenNewCode = false;
+      }
+    }
+
+    if (needToGenNewCode) {
+      const expirationTime = new Date(Date.now() + 5 * 60 * 1000);
+
+      await this._usersRepository.updateUser({
+        where: {
+          id: user.id,
+        },
+        data: {
+          resetCode: secretCode,
+          resetCodeExpiresAt: expirationTime,
+        },
+      });
+    }
+    // TODO: Send secret code to user's email
   }
 }
