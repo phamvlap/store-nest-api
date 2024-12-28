@@ -9,6 +9,10 @@ import { AuthService } from './auth.service';
 import { GetStartedDto, getStartedSchema } from './dtos/get-started.dto';
 import { RegisterUserDto, registerUserSchema } from './dtos/register.dto';
 import { ResetCodeDto, resetCodeSchema } from './dtos/reset-code.dto';
+import {
+  ResetPasswordDto,
+  resetPasswordSchema,
+} from './dtos/reset-password.dto';
 import { LocalUserGuard } from './guards/local-user.guard';
 
 @Controller('auth')
@@ -41,5 +45,12 @@ export class AuthController {
     @Body(new ZodValidationPipe(resetCodeSchema)) body: ResetCodeDto,
   ): Promise<void> {
     return this._authService.sendSecretCode(body.email);
+  }
+
+  @Post('reset-password')
+  async resetPassword(
+    @Body(new ZodValidationPipe(resetPasswordSchema)) body: ResetPasswordDto,
+  ): Promise<void> {
+    return this._authService.resetPassword(body);
   }
 }

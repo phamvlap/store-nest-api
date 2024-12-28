@@ -9,6 +9,7 @@ import {
   isMatchingHash,
 } from '#common/utils';
 import {
+  AUTH_FAILED_RESET_PASSWORD,
   AUTH_LOGIN_FAILED,
   AUTH_UNAUTHORIZED,
 } from '#contents/errors/auth.error';
@@ -18,6 +19,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
 import { RegisterUserDto } from './dtos/register.dto';
+import { ResetPasswordDto } from './dtos/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -178,5 +180,41 @@ export class AuthService {
       });
     }
     // TODO: Send secret code to user's email
+  }
+
+  async resetPassword(payload: ResetPasswordDto): Promise<void> {
+    const user = await this._usersRepository.getFirstUser({
+      where: {
+        email: payload.email,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException(AUTH_FAILED_RESET_PASSWORD);
+    }
+
+    if (!user.resetCode || user.resetCode !== payload.code) {
+      throw new BadRequestException(AUTH_FAILED_RESET_PASSWORD);
+    }
+
+    if (
+      !user.resetCodeExpiresAt ||
+      new Date().getTime() > new Date(user.resetCodeExpiresAt).getTime()
+    ) {
+      throw new BadRequestException(AUTH_FAILED_RESET_PASSWORD);
+    }
+
+    const passwordHash = generateHash(payload.password);
+
+    await this._usersRepository.updateUser({
+      where: {
+        id: user.id,
+      },
+      data: {
+        password: passwordHash,
+        resetCode: null,
+        resetCodeExpiresAt: null,
+      },
+    });
   }
 }

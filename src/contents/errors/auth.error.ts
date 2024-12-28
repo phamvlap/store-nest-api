@@ -8,4 +8,9 @@ const AUTH_UNAUTHORIZED = {
   message: 'Unauthorized',
 };
 
-export { AUTH_LOGIN_FAILED, AUTH_UNAUTHORIZED };
+const AUTH_FAILED_RESET_PASSWORD = {
+  code: 'auth_failed_reset_password',
+  message: 'Failed to reset password',
+};
+
+export { AUTH_LOGIN_FAILED, AUTH_UNAUTHORIZED, AUTH_FAILED_RESET_PASSWORD };
