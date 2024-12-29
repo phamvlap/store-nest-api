@@ -10,14 +10,18 @@ import {
 } from '#common/utils';
 import {
   AUTH_FAILED_RESET_PASSWORD,
+  AUTH_FORBIDDEN,
   AUTH_LOGIN_FAILED,
-  AUTH_UNAUTHORIZED,
 } from '#contents/errors/auth.error';
 import { USER_ALREDADY_EXISTS } from '#contents/errors/user.error';
 import { UsersRepository } from '#modules/users/users.repository';
 import { sign } from 'jsonwebtoken';
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { User } from '@prisma/client';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
+import { AccountStatus, Prisma, User } from '@prisma/client';
 import { RegisterUserDto } from './dtos/register.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 
@@ -42,7 +46,7 @@ export class AuthService {
     };
   }
 
-  async checkingExistedUser(email: string): Promise<AuthGetStarted> {
+  async checkExistedUser(email: string): Promise<AuthGetStarted> {
     const user = await this._usersRepository.getFirstUser({
       where: {
         email,
@@ -66,9 +70,11 @@ export class AuthService {
 
     const passwordHash = generateHash(payload.password);
 
-    const data = {
+    const data: Prisma.UserCreateInput = {
       ...payload,
       password: passwordHash,
+      status: AccountStatus.ACTIVE,
+      isCustomer: true,
     };
 
     const user = await this._usersRepository.createUser({
@@ -100,10 +106,11 @@ export class AuthService {
         lastName: true,
         phoneNumber: true,
         password: true,
+        status: true,
       },
     });
 
-    if (!user) {
+    if (!user || user.status === AccountStatus.INACTIVE) {
       throw new BadRequestException(AUTH_LOGIN_FAILED);
     }
 
@@ -135,7 +142,7 @@ export class AuthService {
     };
   }
 
-  async validateUserProfile(id: string): Promise<UserProfile> {
+  async validateCustomerProfile(id: string): Promise<UserProfile> {
     const user = await this._usersRepository.getFirstUser({
       where: {
         id,
@@ -146,11 +153,13 @@ export class AuthService {
         firstName: true,
         lastName: true,
         phoneNumber: true,
+        isCustomer: true,
+        status: true,
       },
     });
 
-    if (!user) {
-      throw new BadRequestException(AUTH_UNAUTHORIZED);
+    if (!user || !user.isCustomer || user.status === AccountStatus.INACTIVE) {
+      throw new ForbiddenException(AUTH_FORBIDDEN);
     }
 
     return user as UserProfile;

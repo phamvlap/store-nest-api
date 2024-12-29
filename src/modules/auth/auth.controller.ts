@@ -23,7 +23,7 @@ export class AuthController {
   async getStarted(
     @Body(new ZodValidationPipe(getStartedSchema)) body: GetStartedDto,
   ): Promise<AuthGetStarted> {
-    return this._authService.checkingExistedUser(body.email);
+    return this._authService.checkExistedUser(body.email);
   }
 
   @Post('register')

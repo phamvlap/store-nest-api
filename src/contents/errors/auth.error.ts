@@ -13,4 +13,14 @@ const AUTH_FAILED_RESET_PASSWORD = {
   message: 'Failed to reset password',
 };
 
-export { AUTH_LOGIN_FAILED, AUTH_UNAUTHORIZED, AUTH_FAILED_RESET_PASSWORD };
+const AUTH_FORBIDDEN = {
+  code: 'auth_forbidden',
+  message: 'You do not have permission for this action',
+};
+
+export {
+  AUTH_LOGIN_FAILED,
+  AUTH_UNAUTHORIZED,
+  AUTH_FAILED_RESET_PASSWORD,
+  AUTH_FORBIDDEN,
+};

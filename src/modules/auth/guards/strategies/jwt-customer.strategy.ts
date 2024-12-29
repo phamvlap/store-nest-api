@@ -7,9 +7,9 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 
 @Injectable()
-export class JwtUserStrategy extends PassportStrategy(
+export class JwtCustomerStrategy extends PassportStrategy(
   Strategy,
-  StrategyConsts.JWT_USER,
+  StrategyConsts.JWT_CUSTOMER,
 ) {
   constructor(private readonly _authService: AuthService) {
     super({
@@ -20,8 +20,10 @@ export class JwtUserStrategy extends PassportStrategy(
   }
 
   async validate(payload: SignatureData): Promise<UserProfile> {
-    const user = await this._authService.validateUserProfile(payload.sub);
+    const userProfile = await this._authService.validateCustomerProfile(
+      payload.sub,
+    );
 
-    return user;
+    return userProfile;
   }
 }
