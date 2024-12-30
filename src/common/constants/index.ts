@@ -10,6 +10,7 @@ export const BcryptConsts = {
 export const StrategyConsts = {
   LOCAL_USER: 'local-user',
   JWT_CUSTOMER: 'jwt-customer',
+  JWT_ADMIN: 'jwt-admin',
 };
 
 export const JwtConsts = {

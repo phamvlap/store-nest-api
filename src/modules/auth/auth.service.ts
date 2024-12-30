@@ -1,4 +1,5 @@
 import { JwtConsts } from '#common/constants';
+import { TokenType, UserRole } from '#common/enums';
 import { AuthGetStarted } from '#common/types/auth-get-started.type';
 import { LoginResponse } from '#common/types/login-response.type';
 import { SignatureData } from '#common/types/signature-data.type';
@@ -25,24 +26,39 @@ import { AccountStatus, Prisma, User } from '@prisma/client';
 import { RegisterUserDto } from './dtos/register.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 
-type TokenArgs = {
-  secretKey: string;
-  expiresIn: string;
-};
-
 @Injectable()
 export class AuthService {
-  private _accessTokenArgs: TokenArgs;
-  private _refreshTokenArgs: TokenArgs;
+  private _auth: {
+    [key in UserRole]: {
+      [token in TokenType]: {
+        secretKey: string;
+        expiresIn: string;
+      };
+    };
+  };
 
   constructor(private readonly _usersRepository: UsersRepository) {
-    this._accessTokenArgs = {
-      secretKey: process.env.JWT_ACCESS_TOKEN_SECRET_KEY as string,
-      expiresIn: JwtConsts.ACCESS_TOKEN_EXPIRES_IN,
-    };
-    this._refreshTokenArgs = {
-      secretKey: process.env.JWT_REFRESH_TOKEN_SECRET_KEY as string,
-      expiresIn: JwtConsts.REFRESH_TOKEN_EXPIRES_IN,
+    this._auth = {
+      [UserRole.CUSTOMER]: {
+        [TokenType.ACCESS]: {
+          secretKey: process.env.JWT_ACCESS_TOKEN_SECRET_KEY as string,
+          expiresIn: JwtConsts.ACCESS_TOKEN_EXPIRES_IN,
+        },
+        [TokenType.REFRESH]: {
+          secretKey: process.env.JWT_REFRESH_TOKEN_SECRET_KEY as string,
+          expiresIn: JwtConsts.REFRESH_TOKEN_EXPIRES_IN,
+        },
+      },
+      [UserRole.ADMIN]: {
+        [TokenType.ACCESS]: {
+          secretKey: process.env.ADMIN_JWT_ACCESS_TOKEN_SECRET_KEY as string,
+          expiresIn: JwtConsts.ACCESS_TOKEN_EXPIRES_IN,
+        },
+        [TokenType.REFRESH]: {
+          secretKey: process.env.ADMIN_JWT_REFRESH_TOKEN_SECRET_KEY as string,
+          expiresIn: JwtConsts.REFRESH_TOKEN_EXPIRES_IN,
+        },
+      },
     };
   }
 
@@ -91,7 +107,7 @@ export class AuthService {
     return user;
   }
 
-  async validateLoginUser(
+  async validateLoginCustomer(
     email: string,
     password: string,
   ): Promise<UserProfile> {
@@ -107,10 +123,11 @@ export class AuthService {
         phoneNumber: true,
         password: true,
         status: true,
+        isCustomer: true,
       },
     });
 
-    if (!user || user.status === AccountStatus.INACTIVE) {
+    if (!user || !user.isCustomer || user.status === AccountStatus.INACTIVE) {
       throw new BadRequestException(AUTH_LOGIN_FAILED);
     }
 
@@ -129,11 +146,11 @@ export class AuthService {
       email: user.email,
     };
 
-    const accessToken = sign(data, this._accessTokenArgs.secretKey, {
-      expiresIn: this._accessTokenArgs.expiresIn,
+    const accessToken = sign(data, this._auth.CUSTOMER.ACCESS.secretKey, {
+      expiresIn: this._auth.CUSTOMER.ACCESS.expiresIn,
     });
-    const refreshToken = sign(data, this._refreshTokenArgs.secretKey, {
-      expiresIn: this._refreshTokenArgs.expiresIn,
+    const refreshToken = sign(data, this._auth.CUSTOMER.REFRESH.secretKey, {
+      expiresIn: this._auth.CUSTOMER.REFRESH.expiresIn,
     });
 
     return {
@@ -159,6 +176,29 @@ export class AuthService {
     });
 
     if (!user || !user.isCustomer || user.status === AccountStatus.INACTIVE) {
+      throw new ForbiddenException(AUTH_FORBIDDEN);
+    }
+
+    return user as UserProfile;
+  }
+
+  async validateAdminProfile(id: string): Promise<UserProfile> {
+    const user = await this._usersRepository.getFirstUser({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        isAdmin: true,
+        status: true,
+      },
+    });
+
+    if (!user || !user.isAdmin || user.status === AccountStatus.INACTIVE) {
       throw new ForbiddenException(AUTH_FORBIDDEN);
     }
 
