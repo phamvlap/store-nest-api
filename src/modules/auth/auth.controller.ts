@@ -13,7 +13,7 @@ import {
   ResetPasswordDto,
   resetPasswordSchema,
 } from './dtos/reset-password.dto';
-import { LocalUserGuard } from './guards/local-user.guard';
+import { LocalCustomerGuard } from './guards/local-customer.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -34,7 +34,7 @@ export class AuthController {
     return this._authService.register(registerDto);
   }
 
-  @UseGuards(LocalUserGuard)
+  @UseGuards(LocalCustomerGuard)
   @Post('login')
   login(@RequestUser() user: UserProfile): LoginResponse {
     return this._authService.login(user);

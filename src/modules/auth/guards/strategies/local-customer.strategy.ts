@@ -6,9 +6,9 @@ import { PassportStrategy } from '@nestjs/passport';
 import { AuthService } from '../../auth.service';
 
 @Injectable()
-export class LocalUserStrategy extends PassportStrategy(
+export class LocalCustomerStrategy extends PassportStrategy(
   Strategy,
-  StrategyConsts.LOCAL_USER,
+  StrategyConsts.LOCAL_CUSTOMER,
 ) {
   constructor(private readonly _authService: AuthService) {
     super({
