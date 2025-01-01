@@ -1,3 +1,4 @@
+import { AdminModule } from '#modules/admin/admin.module';
 import { AuthModule } from '#modules/auth/auth.module';
 import { BrandsModule } from '#modules/brands/brands.module';
 import { CategoriesModule } from '#modules/categories/categories.module';
@@ -16,6 +17,7 @@ import { AppService } from './app.service';
     ProductsModule,
     UsersModule,
     AuthModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

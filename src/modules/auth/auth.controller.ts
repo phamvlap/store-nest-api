@@ -13,6 +13,7 @@ import {
   ResetPasswordDto,
   resetPasswordSchema,
 } from './dtos/reset-password.dto';
+import { LocalAdminGuard } from './guards/local-admin.guard';
 import { LocalCustomerGuard } from './guards/local-customer.guard';
 
 @Controller('auth')
@@ -38,6 +39,12 @@ export class AuthController {
   @Post('login')
   login(@RequestUser() user: UserProfile): LoginResponse {
     return this._authService.login(user);
+  }
+
+  @UseGuards(LocalAdminGuard)
+  @Post('admin/login')
+  loginAdmin(@RequestUser() user: UserProfile): LoginResponse {
+    return this._authService.loginAdmin(user);
   }
 
   @Post('send-reset-code')

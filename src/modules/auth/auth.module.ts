@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtAdminStrategy } from './guards/strategies/jwt-admin.strategy';
 import { JwtCustomerStrategy } from './guards/strategies/jwt-customer.strategy';
+import { LocalAdminStrategy } from './guards/strategies/local-admin.strategy';
 import { LocalCustomerStrategy } from './guards/strategies/local-customer.strategy';
 
 @Module({
@@ -15,6 +16,7 @@ import { LocalCustomerStrategy } from './guards/strategies/local-customer.strate
     AuthService,
     UsersRepository,
     LocalCustomerStrategy,
+    LocalAdminStrategy,
     JwtCustomerStrategy,
     JwtAdminStrategy,
   ],
